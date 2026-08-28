@@ -21,12 +21,14 @@ interface LinkBannerDraft extends LinkBannerItem { file?: File; localUrl?: strin
 function LinkBannerPreview({ item }: { item: LinkBannerDraft }) {
   const savedUrl = useBlobUrl(item.imgId);
   const remoteUrl = /^https?:\/\//i.test(item.imgUrl?.trim() ?? '') ? item.imgUrl?.trim() : undefined;
-  const src = item.localUrl ?? savedUrl ?? remoteUrl;
+  const [remoteFailed, setRemoteFailed] = useState(false);
+  useEffect(() => setRemoteFailed(false), [remoteUrl]);
+  const src = item.localUrl ?? savedUrl ?? (remoteFailed ? undefined : remoteUrl);
   return (
     <div className="links-edit-preview">
       {src
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={src} alt="" />
+        ? <img src={src} alt="" onError={() => { if (src === remoteUrl) setRemoteFailed(true); }} />
         : <span>{item.title.trim() || 'SITE NAME'}</span>}
     </div>
   );

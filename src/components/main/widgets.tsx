@@ -614,10 +614,12 @@ export function ApplyWidget({ conf }: { conf: WidgetConf }) {
 function LinkBannerImage({ imgId, imgUrl, title }: { imgId?: string; imgUrl?: string; title: string }) {
   const savedUrl = useBlobUrl(imgId);
   const remoteUrl = /^https?:\/\//i.test(imgUrl?.trim() ?? '') ? imgUrl?.trim() : undefined;
-  const src = savedUrl ?? remoteUrl;
+  const [remoteFailed, setRemoteFailed] = useState(false);
+  useEffect(() => setRemoteFailed(false), [remoteUrl]);
+  const src = savedUrl ?? (remoteFailed ? undefined : remoteUrl);
   return src
     // eslint-disable-next-line @next/next/no-img-element
-    ? <img src={src} alt={`${title} 배너`} />
+    ? <img src={src} alt={`${title} 배너`} onError={() => { if (src === remoteUrl) setRemoteFailed(true); }} />
     : <span>{title}</span>;
 }
 

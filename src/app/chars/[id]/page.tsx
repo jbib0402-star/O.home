@@ -53,6 +53,22 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
   };
 }
 
+/** 상세 전신 기본 표시 — 크롭 없이 원본 비율과 투명 배경을 유지하며 영역 안에 전부 맞춘다. */
+function FullArtBlobImg({ fileRef, ph, label, alt }: {
+  fileRef?: string; ph?: string; label?: string; alt?: string;
+}) {
+  const url = useBlobUrl(fileRef);
+  if (!url) {
+    return <div className={`ph ${ph ?? ''}`} style={{ width: '100%', height: '100%' }}>{label && <span>{label}</span>}</div>;
+  }
+  return (
+    <div className="profile-art-contain">
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={url} alt={alt ?? ''} draggable={false} />
+    </div>
+  );
+}
+
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -213,6 +229,9 @@ function CharDetailInner() {
           {canEdit && (
             <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>
           )}
+          {canEdit && auKey && isCharacterAuKey(auKey) && (
+            <button className="btn btn-ghost" onClick={() => setAuDelAsk(auKey)}>AU DELETE</button>
+          )}
           {isAdmin && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
         </div>
 
@@ -223,43 +242,6 @@ function CharDetailInner() {
             { label: 'DELETE', kind: 'accent', onClick: () => { setChars(chars.filter(c => c.id !== ch.id)); router.push('/chars'); } },
             { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
           ]} />
-      </div>
-      {/* 캐릭터 자체 AU + 자관 AU. 새 자체 AU는 charau: namespace로 별도 저장한다. */}
-      <div className="char-au-panel">
-        <div className="char-au-title">AU PROFILE</div>
-        <div className="char-au-list">
-          <button className={`char-au-chip ${auKey === null ? 'on' : ''}`}
-            onClick={() => setAuKey(null)}>
-            <span className={`char-au-face ph ${ch.thumbClass}`}>
-              {charThumbRef(ch) && <CroppedBlobImg fileRef={charThumbRef(ch)} crop={ch.thumbCrop} ph={ch.thumbClass} />}
-            </span>
-            <b>ORIGINAL</b>
-          </button>
-          {charAus.map(a => {
-            const av = charWithAu(ch, a.key);
-            // 기존 자관 AU는 종전과 같이 그 AU의 첫 아트를 썸네일 fallback으로 허용한다.
-            // 새 캐릭터 자체 AU는 두상/전신 독립 규칙에 따라 thumbId만 쓴다.
-            const faceRef = av.thumbId ?? (a.source === 'relation' ? av.arts?.[0] : undefined);
-            return (
-              <button key={a.key} className={`char-au-chip ${auKey === a.key ? 'on' : ''}`}
-                data-tip={a.source === 'relation' ? `${a.relName} · 자관 AU` : '캐릭터 자체 AU'}
-                onClick={() => setAuKey(a.key)}>
-                <span className={`char-au-face ph ${ch.thumbClass}`}>
-                  {faceRef && <CroppedBlobImg fileRef={faceRef} crop={av.thumbCrop} ph={ch.thumbClass} />}
-                </span>
-                <b>{a.label}</b>
-              </button>
-            );
-          })}
-          {canEdit && (
-            <button className="char-au-chip add" onClick={() => setAuCreateOpen(true)}>
-              <span className="char-au-plus">＋</span><b>AU</b>
-            </button>
-          )}
-        </div>
-        {canEdit && auKey && isCharacterAuKey(auKey) && (
-          <button className="btn btn-ghost char-au-delete" onClick={() => setAuDelAsk(auKey)}>AU 삭제</button>
-        )}
       </div>
       <Modal open={auCreateOpen} small title="새 AU 프로필"
         desc="AU 이름을 입력하면 독립된 프로필을 만든 뒤 바로 편집 화면으로 이동합니다."
@@ -279,32 +261,70 @@ function CharDetailInner() {
           { label: 'DELETE', kind: 'accent', onClick: () => { if (auDelAsk) deleteCharacterAu(auDelAsk); } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setAuDelAsk(null) },
         ]} />
-      {/* AU 미등록 (v1.9 사용자 확정) — base를 보여주지 않고 그 AU에 맞춰 캐릭터를 새로 등록 */}
-      {auKey && !auRegistered ? (
-        <div className="panel" style={{ textAlign: 'center', padding: 56 }}>
-          <div style={{ fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '.14em', marginBottom: 8 }}>
-            {charAus.find(a => a.key === auKey)?.label ?? 'AU'}
-          </div>
-          <p style={{ fontSize: 13, color: 'var(--faint)', marginBottom: 16 }}>
-            이 AU의 「{ch.name}」이 아직 등록되지 않았습니다 — 등록하면 이 캐릭터의 AU 프로필로 연동됩니다
-          </p>
-          {(isAdmin || charGrant(ch, user?.id) === 'edit') && (
-            <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>
-          )}
-        </div>
-      ) : (
       <div className="profile-wrap">
-        {/* 좌측 아이콘 탭 — AU면 그 AU의 탭 구성 */}
-        <div className="side-icons">
-          <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" onClick={() => pickTab('basic')}>☰</button>
-          {eff.tabs.map(t => (
-            <button key={t.id} className={tab === t.id ? 'on' : ''} data-tip={t.title} onClick={() => pickTab(t.id)}>{t.icon}</button>
-          ))}
-          {isAdmin && (
-            <button data-tip="탭 추가 (편집모드)" style={{ borderStyle: 'dashed', fontSize: 13 }}
-              onClick={() => router.push(editHref)}>＋</button>
+        {/* 좌측 내비게이션 — 프로필 버전(AU)과 현재 버전의 내용 탭을 분리한다. */}
+        <nav className="side-icons" aria-label="캐릭터 프로필 탐색">
+          <div className="side-icon-group">
+            <span className="side-icon-label">AU</span>
+            <button className={`side-au-button ${auKey === null ? 'on' : ''}`}
+              data-tip="ORIGINAL" aria-label="ORIGINAL 프로필" onClick={() => setAuKey(null)}>
+              <span className={`side-au-face ph ${ch.thumbClass}`}>
+                {charThumbRef(ch)
+                  ? <CroppedBlobImg fileRef={charThumbRef(ch)} crop={ch.thumbCrop} ph={ch.thumbClass} />
+                  : <b>O</b>}
+              </span>
+            </button>
+            {charAus.map(a => {
+              const av = charWithAu(ch, a.key);
+              // 자관 AU만 기존 첫 아트 썸네일 fallback을 유지한다. 캐릭터 자체 AU 이미지는 독립적이다.
+              const faceRef = av.thumbId ?? (a.source === 'relation' ? av.arts?.[0] : undefined);
+              const tip = a.source === 'relation' ? `${a.label} · ${a.relName ?? '자관'} AU` : a.label;
+              return (
+                <button key={a.key} className={`side-au-button ${auKey === a.key ? 'on' : ''}`}
+                  data-tip={tip} aria-label={`${a.label} 프로필`} onClick={() => setAuKey(a.key)}>
+                  <span className={`side-au-face ph ${ch.thumbClass}`}>
+                    {faceRef
+                      ? <CroppedBlobImg fileRef={faceRef} crop={av.thumbCrop} ph={ch.thumbClass} />
+                      : <b>{a.label.trim().charAt(0) || 'A'}</b>}
+                  </span>
+                </button>
+              );
+            })}
+            {canEdit && (
+              <button className="side-au-add" data-tip="새 AU 추가" aria-label="새 AU 추가"
+                onClick={() => setAuCreateOpen(true)}>＋</button>
+            )}
+          </div>
+
+          {auRegistered && (
+            <>
+              <div className="side-icon-divider" aria-hidden="true" />
+              <div className="side-icon-group">
+                <span className="side-icon-label">INFO</span>
+                <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" onClick={() => pickTab('basic')}>☰</button>
+                {eff.tabs.map(t => (
+                  <button key={t.id} className={tab === t.id ? 'on' : ''} data-tip={t.title} onClick={() => pickTab(t.id)}>{t.icon}</button>
+                ))}
+              </div>
+            </>
           )}
-        </div>
+        </nav>
+
+        {/* AU 미등록 — 왼쪽 선택 메뉴를 유지한 채 등록 안내를 표시한다. */}
+        {auKey && !auRegistered ? (
+          <div className="panel profile-au-empty">
+            <div style={{ fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '.14em', marginBottom: 8 }}>
+              {charAus.find(a => a.key === auKey)?.label ?? 'AU'}
+            </div>
+            <p style={{ fontSize: 13, color: 'var(--faint)', marginBottom: 16 }}>
+              이 AU의 「{ch.name}」이 아직 등록되지 않았습니다 — 등록하면 이 캐릭터의 AU 프로필로 연동됩니다
+            </p>
+            {canEdit && (
+              <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>
+            )}
+          </div>
+        ) : (
+        <>
 
         {/* 중앙 아트 — 스티키 · 추가 아트가 있으면 클릭으로 넘겨보기 */}
         {(() => {
@@ -323,13 +343,15 @@ function CharDetailInner() {
                 e.preventDefault();
                 setArtCtx({ x: e.clientX, y: e.clientY, ref: arts[0] });
               }}>
-              {/* 지정한 크롭 위치를 여기서도 쓴다 — 예전에는 가운데 기준으로 잘려서
-                  리스트에서 맞춰 둔 위치와 다른 곳이 보였다 (대표 아트에만 적용) */}
-              {/* 리스트 썸네일 크롭은 3:4 기준이라 여기(화면 높이에 따라 비율이 달라지는 영역)에는
-                  맞지 않는다 — 여기서 따로 잡은 값이 있을 때만 쓰고, 없으면 가운데 기준 (v2.0) */}
-              <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
-                crop={cur === 0 ? eff.artCrop : undefined}
-                ph={ch.thumbClass} label="CHARACTER FULL ART" />
+              {/* 기본은 전체 이미지가 보이는 자동 contain. 대표 전신에 사용자가 명시적으로 저장한
+                  기존 artCrop이 있을 때만 하위 호환을 위해 종전 위치 조정 결과를 재현한다. */}
+              {cur === 0 && eff.artCrop ? (
+                <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
+                  crop={eff.artCrop} ph={ch.thumbClass} label="CHARACTER FULL ART" />
+              ) : (
+                <FullArtBlobImg fileRef={arts[cur] ?? eff.artUrl}
+                  ph={ch.thumbClass} label="CHARACTER FULL ART" alt={`${eff.name} 전신`} />
+              )}
               {arts.length > 1 && (
                 <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
                   {arts.map((_, i) => (
@@ -393,8 +415,9 @@ function CharDetailInner() {
             </>
           )}
         </div>
+        </>
+        )}
       </div>
-      )}
 
       {/* 대표 아트 우클릭 메뉴 (v2.0) — 상세 화면에 보일 위치 조정 */}
       {artCtx && createPortal(

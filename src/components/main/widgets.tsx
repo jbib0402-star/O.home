@@ -611,11 +611,15 @@ export function ApplyWidget({ conf }: { conf: WidgetConf }) {
 
 /* ---------- LINKS — 친구 홈페이지의 작은 88:31 배너 모음 ---------- */
 
-function LinkBannerImage({ imgId, title }: { imgId?: string; title: string }) {
-  const src = useBlobUrl(imgId);
+function LinkBannerImage({ imgId, imgUrl, title }: { imgId?: string; imgUrl?: string; title: string }) {
+  const savedUrl = useBlobUrl(imgId);
+  const remoteUrl = /^https?:\/\//i.test(imgUrl?.trim() ?? '') ? imgUrl?.trim() : undefined;
+  const [remoteFailed, setRemoteFailed] = useState(false);
+  useEffect(() => setRemoteFailed(false), [remoteUrl]);
+  const src = savedUrl ?? (remoteFailed ? undefined : remoteUrl);
   return src
     // eslint-disable-next-line @next/next/no-img-element
-    ? <img src={src} alt={`${title} 배너`} />
+    ? <img src={src} alt={`${title} 배너`} onError={() => { if (src === remoteUrl) setRemoteFailed(true); }} />
     : <span>{title}</span>;
 }
 
@@ -660,14 +664,14 @@ export function LinksWidget({ conf }: { conf: WidgetConf }) {
                     router.push(href);
                   }
                 }}>
-                <LinkBannerImage imgId={item.imgId} title={item.title} />
+                <LinkBannerImage imgId={item.imgId} imgUrl={item.imgUrl} title={item.title} />
               </a>
             );
           })}
         </div>
       ) : <p className="hint links-empty">등록된 링크가 없습니다 · MANAGE에서 추가</p>}
       <Modal open={open} onClose={() => setOpen(false)} title="LINKS 관리"
-        desc="배너 추가 · 이미지 업로드 · 사이트명과 주소 수정 · 삭제 · ⠿ 드래그로 순서 변경">
+        desc="배너 추가 · 이미지 업로드/URL · 사이트명과 주소 수정 · 삭제 · ⠿ 드래그로 순서 변경">
         {open && <LinksEditor conf={conf} onSaved={() => setOpen(false)} onClose={() => setOpen(false)} />}
       </Modal>
     </div>

@@ -39,6 +39,9 @@ export interface Character {
   thumbClass: string;    // 데모 플레이스홀더 클래스
   thumbId?: string;      // 리스트 썸네일 (IndexedDB, 3:4 크롭)
   thumbCrop?: import("@/components/ui/CropEditor").CropValue;
+  /** true면 두상/전신 분리 시스템을 사용한다. 이 경우 목록 이미지는 thumbId만 사용한다.
+   *  없는 구 데이터만 기존 대표 전신 fallback을 허용해 이전 캐릭터가 깨지지 않게 한다. */
+  separateThumb?: boolean;
   /** 상세 페이지 중앙 아트의 위치 (v2.0) — 리스트 썸네일과 보이는 크기·비율이 달라
    *  같은 크롭을 쓰면 원하는 부분이 안 나온다. 따로 잡으면 상세에서는 이 값을 쓴다. */
   artCrop?: import("@/components/ui/CropEditor").CropValue;
@@ -91,7 +94,8 @@ export const CHAR_AU_PREFIX = 'charau:';
 export const isCharacterAuKey = (key?: string | null): boolean => !!key?.startsWith(CHAR_AU_PREFIX);
 
 /** ORIGINAL 캐릭터의 목록용 두상. 구 데이터는 대표 아트까지 순서대로 fallback한다. */
-export function charThumbRef(c: Pick<Character, 'thumbId' | 'arts' | 'artId' | 'artUrl'>): string | undefined {
+export function charThumbRef(c: Pick<Character, 'thumbId' | 'arts' | 'artId' | 'artUrl' | 'separateThumb'>): string | undefined {
+  if (c.separateThumb) return c.thumbId;
   return c.thumbId ?? c.arts?.[0] ?? c.artId ?? c.artUrl;
 }
 

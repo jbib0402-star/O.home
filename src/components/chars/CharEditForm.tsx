@@ -137,6 +137,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       arts: artIds,
       thumbId,                  // 목록용 두상 — 전신/아트와 독립
       thumbCrop: thumbId ? thumbCrop : (!thumbTouched && !initial?.thumbId ? initial?.thumbCrop : undefined),
+      // 신규 캐릭터와 두상을 직접 등록·변경·삭제한 캐릭터만 독립 모드로 전환한다.
+      // 구 캐릭터의 이름/설명만 수정한 경우에는 undefined를 유지해 기존 전신 fallback을 보존한다.
+      separateThumb: initial?.separateThumb === true || isNew || thumbTouched ? true : undefined,
       artId: artIds[0],
       own: initial?.own ?? true,
       grants: grants.length ? grants : undefined,
@@ -194,13 +197,15 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
               <button className="btn btn-ghost" style={addBtn}
                 onClick={() => del.ask('두상 이미지를 삭제하시겠습니까?', () => {
                   setThumb(null); setThumbTouched(true); setThumbCrop(undefined); setCropOpen(false);
-                }, '전신/아트 이미지는 삭제되지 않습니다. 구 데이터는 목록에서 기존 대표 아트를 fallback으로 표시할 수 있습니다.')}>삭제</button>
+                }, '전신/아트 이미지는 삭제되지 않으며, 목록에는 두상 플레이스홀더가 표시됩니다.')}>삭제</button>
             )}
             <p className="hint" style={{ margin: 0 }}>※ CHARACTERS 목록에서 사용됩니다. 전신 이미지와 별도의 파일입니다.</p>
             {!thumb && initial && (
               <p className="hint" style={{ margin: 0 }}>
                 {auMode ? '이 AU에 두상을 등록하지 않으면 ORIGINAL 이미지 대신 빈 이미지로 표시됩니다.'
-                  : '별도 두상이 없는 기존 캐릭터는 목록에서 대표 아트를 안전하게 대신 표시합니다.'}
+                  : initial.separateThumb
+                    ? '두상을 등록하지 않으면 목록에는 전신 대신 플레이스홀더가 표시됩니다.'
+                    : '별도 두상이 없는 기존 캐릭터는 목록에서 대표 아트를 안전하게 대신 표시합니다.'}
               </p>
             )}
           </div>

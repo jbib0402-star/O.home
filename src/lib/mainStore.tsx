@@ -317,6 +317,7 @@ export interface LinkBannerItem {
   title: string;
   url: string;
   imgId?: string;
+  imgUrl?: string;
 }
 
 /** 저장 데이터가 오래됐거나 일부 필드가 비어 있어도 렌더러와 편집기가 안전하게 읽는다. */
@@ -328,7 +329,8 @@ export function linkBannerItems(settings: Record<string, unknown>): LinkBannerIt
     && typeof item.id === 'string'
     && typeof item.title === 'string'
     && typeof item.url === 'string'
-    && (item.imgId == null || typeof item.imgId === 'string'));
+    && (item.imgId == null || typeof item.imgId === 'string')
+    && (item.imgUrl == null || typeof item.imgUrl === 'string'));
 }
 
 /* ---------- 이미지 위젯 슬라이드 (v2.0) ---------- */

@@ -20,7 +20,8 @@ interface LinkBannerDraft extends LinkBannerItem { file?: File; localUrl?: strin
 
 function LinkBannerPreview({ item }: { item: LinkBannerDraft }) {
   const savedUrl = useBlobUrl(item.imgId);
-  const src = item.localUrl ?? savedUrl;
+  const remoteUrl = /^https?:\/\//i.test(item.imgUrl?.trim() ?? '') ? item.imgUrl?.trim() : undefined;
+  const src = item.localUrl ?? savedUrl ?? remoteUrl;
   return (
     <div className="links-edit-preview">
       {src
@@ -63,12 +64,16 @@ export function LinksEditor({ conf, onSaved, onClose }: {
           onChange={e => patchItem(item.id, { title: e.target.value })} />
         <KInput placeholder="주소 (https://… 또는 /내부경로)" value={item.url}
           onChange={e => patchItem(item.id, { url: e.target.value })} />
-        {(item.file || item.imgId) && (
-          <button type="button" className="btn btn-ghost links-edit-remove-image"
-            onClick={() => patchItem(item.id, { file: undefined, localUrl: undefined, imgId: undefined })}>
-            이미지 제거
-          </button>
-        )}
+        <div style={{ gridColumn: '1 / -1', display: 'flex', gap: 6, alignItems: 'center', minWidth: 0 }}>
+          <KInput placeholder="이미지 URL (http:// 또는 https://)" value={item.imgUrl ?? ''}
+            onChange={e => patchItem(item.id, { imgUrl: e.target.value })} />
+          {(item.file || item.imgId) && (
+            <button type="button" className="btn btn-ghost links-edit-remove-image"
+              onClick={() => patchItem(item.id, { file: undefined, localUrl: undefined, imgId: undefined })}>
+              업로드 이미지 제거
+            </button>
+          )}
+        </div>
       </div>
       <button type="button" className="btn btn-ghost links-edit-delete"
         onClick={() => del.ask(
@@ -113,11 +118,16 @@ export function LinksEditor({ conf, onSaved, onClose }: {
               toast('주소는 http(s):// 외부 주소 또는 /로 시작하는 내부 경로를 입력해 주세요');
               return;
             }
+            if (draft.some(item => item.imgUrl?.trim() && !/^https?:\/\//i.test(item.imgUrl.trim()))) {
+              toast('이미지 URL은 http:// 또는 https:// 주소만 사용할 수 있습니다');
+              return;
+            }
             const items: LinkBannerItem[] = await Promise.all(draft.map(async item => ({
               id: item.id,
               title: item.title.trim(),
               url: normalizeInternalLink(item.url),
               imgId: item.file ? await putBlob(item.file) : item.imgId,
+              imgUrl: item.imgUrl?.trim() || undefined,
             })));
             updateWidget(conf.id, { settings: { ...conf.settings, items } }, { persist: true });
             toast('LINKS가 저장되었습니다');
@@ -126,7 +136,7 @@ export function LinksEditor({ conf, onSaved, onClose }: {
           {onClose && <button type="button" className="btn btn-ghost" onClick={onClose}>CLOSE</button>}
         </div>
       </div>
-      <p className="hint">배너는 88:31 비율 안에 원본이 잘리지 않게 표시됩니다 · 외부 주소는 새 탭, 내부 경로는 현재 탭에서 열립니다</p>
+      <p className="hint">업로드 이미지가 이미지 URL보다 우선 표시됩니다 · 배너는 88:31 비율 안에 원본이 잘리지 않게 표시됩니다 · 외부 주소는 새 탭, 내부 경로는 현재 탭에서 열립니다</p>
       {del.element}
     </div>
   );

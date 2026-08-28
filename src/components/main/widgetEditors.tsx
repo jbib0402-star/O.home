@@ -1,8 +1,8 @@
 'use client';
 // 위젯 설정 공용 에디터 (5장 「위젯」 카테고리 · 메인 위젯 관리 모달 공유)
 // 같은 mainStore를 갱신하므로 메인에서 바꾸든 환경설정에서 바꾸든 즉시 서로 반영됨
-import React, { useEffect, useState } from 'react';
-import { WidgetConf, useMainStore, decoSlides, DecoSlide } from '@/lib/mainStore';
+import React, { useEffect, useRef, useState } from 'react';
+import { WidgetConf, useMainStore, decoSlides, DecoSlide, LinkBannerItem, linkBannerItems } from '@/lib/mainStore';
 import { KInput, KTextarea, KCheck, KStep, KDate } from '@/components/ui/Kit';
 import { DragList } from '@/components/ui/DragList';
 import { CropEditor, CropValue, CropImg, CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -13,6 +13,124 @@ import { normalizeInternalLink } from '@/lib/link';
 import { KSelect } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { useFonts } from '@/lib/fontStore';
+
+/* ---------- LINKS — 친구 홈페이지 링크 배너 ---------- */
+
+interface LinkBannerDraft extends LinkBannerItem { file?: File; localUrl?: string }
+
+function LinkBannerPreview({ item }: { item: LinkBannerDraft }) {
+  const savedUrl = useBlobUrl(item.imgId);
+  const src = item.localUrl ?? savedUrl;
+  return (
+    <div className="links-edit-preview">
+      {src
+        // eslint-disable-next-line @next/next/no-img-element
+        ? <img src={src} alt="" />
+        : <span>{item.title.trim() || 'SITE NAME'}</span>}
+    </div>
+  );
+}
+
+export function LinksEditor({ conf, onSaved, onClose }: {
+  conf: WidgetConf; onSaved?: () => void; onClose?: () => void;
+}) {
+  const { updateWidget } = useMainStore();
+  const toast = useToast();
+  const del = useConfirmDelete();
+  const [draft, setDraft] = useState<LinkBannerDraft[]>(() => linkBannerItems(conf.settings).map(x => ({ ...x })));
+  const [fileFor, setFileFor] = useState<string | null>(null);
+  const objectUrls = useRef<string[]>([]);
+  const inputId = `linksF-${conf.id}`;
+
+  useEffect(() => () => objectUrls.current.forEach(URL.revokeObjectURL), []);
+  useEffect(() => {
+    setDraft(linkBannerItems(conf.settings).map(x => ({ ...x })));
+  }, [conf.settings]);
+
+  const patchItem = (id: string, patch: Partial<LinkBannerDraft>) =>
+    setDraft(items => items.map(item => item.id === id ? { ...item, ...patch } : item));
+
+  const row = (item: LinkBannerDraft) => (
+    <div className="links-edit-row">
+      <span className="drag-h" aria-label="순서 변경">⠿</span>
+      <button type="button" className="links-edit-image"
+        aria-label={`${item.title || '링크'} 배너 이미지 선택`}
+        onClick={() => { setFileFor(item.id); document.getElementById(inputId)?.click(); }}>
+        <LinkBannerPreview item={item} />
+      </button>
+      <div className="links-edit-fields">
+        <KInput placeholder="사이트 이름" value={item.title}
+          onChange={e => patchItem(item.id, { title: e.target.value })} />
+        <KInput placeholder="주소 (https://… 또는 /내부경로)" value={item.url}
+          onChange={e => patchItem(item.id, { url: e.target.value })} />
+        {(item.file || item.imgId) && (
+          <button type="button" className="btn btn-ghost links-edit-remove-image"
+            onClick={() => patchItem(item.id, { file: undefined, localUrl: undefined, imgId: undefined })}>
+            이미지 제거
+          </button>
+        )}
+      </div>
+      <button type="button" className="btn btn-ghost links-edit-delete"
+        onClick={() => del.ask(
+          `링크${item.title ? ` 「${item.title}」` : ''}를 삭제하시겠습니까?`,
+          () => setDraft(items => items.filter(x => x.id !== item.id)),
+          '삭제는 [SAVE]를 눌러야 확정됩니다.',
+        )}>DELETE</button>
+    </div>
+  );
+
+  return (
+    <div className="links-editor">
+      <input id={inputId} type="file" accept="image/png,image/webp,image/*" style={{ display: 'none' }}
+        onChange={e => {
+          const file = e.target.files?.[0];
+          e.target.value = '';
+          if (!file || !fileFor) { setFileFor(null); return; }
+          const localUrl = URL.createObjectURL(file);
+          objectUrls.current.push(localUrl);
+          patchItem(fileFor, { file, localUrl });
+          setFileFor(null);
+        }} />
+
+      {draft.length > 0
+        ? <DragList items={draft} keyOf={item => item.id} onReorder={setDraft} render={row} />
+        : <p className="hint">등록된 링크가 없습니다 · 아래 버튼으로 추가해 주세요</p>}
+
+      <div className="links-edit-actions">
+        <button type="button" className="btn btn-ghost" onClick={() => setDraft(items => [...items, {
+          id: `link-${Date.now().toString(36)}`, title: '', url: '',
+        }])}>＋ 배너 추가</button>
+        <div>
+          <button type="button" className="btn btn-dark" onClick={async () => {
+            if (draft.some(item => !item.title.trim() || !item.url.trim())) {
+              toast('사이트 이름과 주소를 모두 입력해 주세요');
+              return;
+            }
+            if (draft.some(item => {
+              const url = normalizeInternalLink(item.url);
+              return !/^https?:\/\//i.test(url) && !(url.startsWith('/') && !url.startsWith('//'));
+            })) {
+              toast('주소는 http(s):// 외부 주소 또는 /로 시작하는 내부 경로를 입력해 주세요');
+              return;
+            }
+            const items: LinkBannerItem[] = await Promise.all(draft.map(async item => ({
+              id: item.id,
+              title: item.title.trim(),
+              url: normalizeInternalLink(item.url),
+              imgId: item.file ? await putBlob(item.file) : item.imgId,
+            })));
+            updateWidget(conf.id, { settings: { ...conf.settings, items } }, { persist: true });
+            toast('LINKS가 저장되었습니다');
+            onSaved?.();
+          }}>SAVE</button>
+          {onClose && <button type="button" className="btn btn-ghost" onClick={onClose}>CLOSE</button>}
+        </div>
+      </div>
+      <p className="hint">배너는 88:31 비율 안에 원본이 잘리지 않게 표시됩니다 · 외부 주소는 새 탭, 내부 경로는 현재 탭에서 열립니다</p>
+      {del.element}
+    </div>
+  );
+}
 
 /* ---------- MEMO · 자유 텍스트 — settings.text (+ freetext: 폰트·크기·색·정렬, v1.9) ---------- */
 export function TextSettingEditor({ conf }: { conf: WidgetConf }) {

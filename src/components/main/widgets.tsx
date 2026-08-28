@@ -2,7 +2,7 @@
 // 메인 위젯 렌더러 (4.0) — DIARY/LATEST/UPCOMING 등은 해당 기능(2·3차) 전까지 데모 데이터
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { WidgetConf, useMainStore, WIDGET_META, decoSlides } from '@/lib/mainStore';
+import { WidgetConf, useMainStore, WIDGET_META, decoSlides, linkBannerItems } from '@/lib/mainStore';
 import { useAuth } from '@/lib/auth';
 import { boardEntries, useMenuSettings, buildMenu, canViewHref } from '@/lib/menuStore';
 import { sectionHref, MAIN_SEC, useSections, sectionMenuEntries } from '@/lib/sectionStore';
@@ -12,7 +12,7 @@ import { Modal } from '@/components/ui/Modal';
 import { KTextarea, KSelect, KStep, KCheck } from '@/components/ui/Kit';
 import { ColorField } from '@/components/ui/ColorField';
 import { useFonts } from '@/lib/fontStore';
-import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem } from '@/components/main/widgetEditors';
+import { BannerEditor, BannerSlide, DEMO_SLIDES, DdayEditor, DecoEditor, TodoEditor, TodoSetItem, LinksEditor } from '@/components/main/widgetEditors';
 import { CroppedBlobImg, CropValue } from '@/components/ui/CropEditor';
 import { useLocalList } from '@/lib/postStore';
 import { RoadItem, ROAD_SEED, BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
@@ -609,6 +609,64 @@ export function ApplyWidget({ conf }: { conf: WidgetConf }) {
   );
 }
 
+/* ---------- LINKS — 친구 홈페이지의 작은 88:31 배너 모음 ---------- */
+
+function LinkBannerImage({ imgId, title }: { imgId?: string; title: string }) {
+  const src = useBlobUrl(imgId);
+  return src
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={src} alt={`${title} 배너`} />
+    : <span>{title}</span>;
+}
+
+export function LinksWidget({ conf }: { conf: WidgetConf }) {
+  const { isAdmin } = useAuth();
+  const { editOn } = useMainStore();
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const items = linkBannerItems(conf.settings);
+  useEditEvent(conf.id, () => setOpen(true));
+
+  if (!isAdmin && items.length === 0) return null;
+
+  return (
+    <div className="panel widget links-widget">
+      <h4>
+        LINKS
+        {isAdmin && !editOn && <button className="more" onClick={() => setOpen(true)}>MANAGE</button>}
+      </h4>
+      {items.length > 0 ? (
+        <div className="links-list">
+          {items.map(item => {
+            const normalized = normalizeInternalLink(item.url);
+            const external = /^https?:\/\//i.test(normalized);
+            const internal = normalized.startsWith('/') && !normalized.startsWith('//');
+            const href = external || internal ? normalized : '';
+            return (
+              <a key={item.id} className="links-banner" href={href || undefined}
+                title={item.title} aria-label={`${item.title} 홈페이지로 이동`}
+                target={external ? '_blank' : undefined}
+                rel={external ? 'noopener noreferrer' : undefined}
+                onClick={e => {
+                  if (!external && href) {
+                    e.preventDefault();
+                    router.push(href);
+                  }
+                }}>
+                <LinkBannerImage imgId={item.imgId} title={item.title} />
+              </a>
+            );
+          })}
+        </div>
+      ) : <p className="hint links-empty">등록된 링크가 없습니다 · MANAGE에서 추가</p>}
+      <Modal open={open} onClose={() => setOpen(false)} title="LINKS 관리"
+        desc="배너 추가 · 이미지 업로드 · 사이트명과 주소 수정 · 삭제 · ⠿ 드래그로 순서 변경">
+        {open && <LinksEditor conf={conf} onSaved={() => setOpen(false)} onClose={() => setOpen(false)} />}
+      </Modal>
+    </div>
+  );
+}
+
 /* ---------- 타입 → 렌더러 ---------- */
 export function renderWidget(conf: WidgetConf) {
   switch (conf.type) {
@@ -624,6 +682,7 @@ export function renderWidget(conf: WidgetConf) {
     case 'deco': return <DecoWidget conf={conf} />;
     case 'memoboard': return <MemoBoardWidget />;
     case 'apply': return <ApplyWidget conf={conf} />;
+    case 'links': return <LinksWidget conf={conf} />;
     default: return <div className="panel widget"><h4>{WIDGET_META[conf.type]?.title ?? conf.type}</h4></div>;
   }
 }

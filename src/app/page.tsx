@@ -8,13 +8,15 @@ import { MemberBox } from '@/components/main/MemberBox';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { KRadio } from '@/components/ui/Kit';
 import { useToast } from '@/components/ui/Toast';
+import { useAuth } from '@/lib/auth';
 
-const ADDABLE: WidgetType[] = ['memo', 'dday', 'todo', 'upcoming', 'freetext', 'deco', 'diary', 'latest', 'apply'];
+const ADDABLE: WidgetType[] = ['memo', 'dday', 'todo', 'upcoming', 'freetext', 'deco', 'diary', 'latest', 'apply', 'links'];
 /** 내용 설정 모달이 있는 위젯 — 우클릭 「설정」 노출 대상 (v1.9) */
-const EDITABLE: WidgetType[] = ['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'apply'];
+const EDITABLE: WidgetType[] = ['banner', 'memo', 'dday', 'todo', 'freetext', 'deco', 'apply', 'links'];
 
 export default function MainPage() {
   const { state, editOn, gridOn, updateWidget, addWidget, removeWidget } = useMainStore();
+  const { isAdmin } = useAuth();
   const toast = useToast();
   const [ctx, setCtx] = useState<{ id: string; x: number; y: number } | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -35,7 +37,10 @@ export default function MainPage() {
     if (!MULTI_TYPES.includes(addType) && state.widgets.some(w => w.type === addType)) setAddType('freetext');
   }, [addOpen]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const enabled = state.widgets.filter(w => w.enabled);
+  // 빈 LINKS는 방문자에게 프레임까지 완전히 감춘다. 관리자는 빈 상태에서 MANAGE로 채울 수 있다.
+  const enabled = state.widgets.filter(w => w.enabled && (
+    w.type !== 'links' || isAdmin || (Array.isArray(w.settings.items) && w.settings.items.length > 0)
+  ));
   const byCol = (c: 1 | 2 | 3) => enabled.filter(w => w.col === c);
   const mOrder = (id: string) => {
     const i = state.mobileOrder.indexOf(id);

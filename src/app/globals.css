@@ -844,6 +844,31 @@ body.edit-on .main-grid{grid-template-columns:230px 1fr 260px}
 .dday-row .d-red{color:var(--accent)}
 .todo-row{display:flex;align-items:center;gap:9px;padding:6px 0;font-size:calc(12.5px*var(--fs,1))}
 .todo-row.done span{text-decoration:line-through;color:var(--faint)}
+/* LINKS — 고전 개인홈 배너(88:31), 원본을 자르거나 필요 이상으로 확대하지 않음 */
+.links-list{display:flex;flex-wrap:wrap;gap:8px;align-content:flex-start;min-width:0}
+.links-banner{width:88px;max-width:100%;aspect-ratio:88/31;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  border:1px solid var(--line);border-radius:3px;background:color-mix(in srgb,var(--panel) 82%,transparent);color:var(--sub);
+  font-size:calc(9px*var(--fs,1));font-weight:700;letter-spacing:.04em;text-align:center;line-height:1.15;text-decoration:none}
+.links-banner img{display:block;width:100%;height:100%;object-fit:contain}
+.links-banner span{max-width:100%;padding:3px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.links-banner:hover{border-color:var(--sub)}
+.links-empty{margin:0}
+.links-editor{display:grid;gap:10px}
+.links-edit-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);width:100%}
+.links-edit-image{width:88px;flex:0 0 88px;padding:0;border:0;background:none}
+.links-edit-preview{width:88px;aspect-ratio:88/31;display:flex;align-items:center;justify-content:center;overflow:hidden;
+  border:1.5px dashed var(--line);border-radius:3px;background:color-mix(in srgb,var(--panel) 82%,transparent);color:var(--sub)}
+.links-edit-preview img{display:block;width:100%;height:100%;object-fit:contain}
+.links-edit-preview span{max-width:100%;padding:3px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:9px;font-weight:700}
+.links-edit-fields{display:grid;grid-template-columns:1fr 1.45fr auto;gap:6px;align-items:center;flex:1;min-width:0}
+.links-edit-remove-image,.links-edit-delete{height:24px;padding:0 10px;font-size:10px;white-space:nowrap;display:inline-flex;align-items:center}
+.links-edit-actions{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.links-edit-actions>div{display:flex;gap:8px;margin-left:auto}
+@media (max-width:620px){
+  .links-edit-row{align-items:flex-start;flex-wrap:wrap}
+  .links-edit-fields{grid-template-columns:1fr;flex-basis:calc(100% - 112px)}
+  .links-edit-delete{margin-left:auto}
+}
 .diary-mini{display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);cursor:var(--cur-pointer,pointer)}
 .diary-mini:last-child{border:none}
 /* line-height를 1로 눌러야 글자 상자가 아니라 글자 자체가 가운데로 온다 (v2.0 사용자 발견) */

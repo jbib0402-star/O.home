@@ -20,6 +20,11 @@ function CharEditInner() {
   const toast = useToast();
   const params = useSearchParams();
   const auKey = params.get('au');   // 자관 `${relId}:${auId}` 또는 캐릭터 자체 `charau:${id}`
+  // 자체 AU를 만든 직후 서버 동기화보다 이 페이지가 먼저 열릴 수 있어 생성 당시 이름도 받는다.
+  // 자관 AU에는 적용하지 않아 기존 자관 이름 결정 방식을 그대로 유지한다.
+  const pendingCharAuLabel = auKey && isCharacterAuKey(auKey)
+    ? (params.get('aulabel')?.trim() || undefined)
+    : undefined;
   const [chars, setChars, loaded] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
 
@@ -39,7 +44,7 @@ function CharEditInner() {
   // AU 라벨 (타이틀 표시용) — 캐릭터 자체 AU는 프로필 안 label, 자관 AU는 Relation.aus
   const auLabel = (() => {
     if (!auKey) return null;
-    if (isCharacterAuKey(auKey)) return charAu?.label ?? 'AU';
+    if (isCharacterAuKey(auKey)) return charAu?.label ?? pendingCharAuLabel ?? 'AU';
     const [relId, auId] = auKey.split(':');
     return rels.find(r => r.id === relId)?.aus.find(a => a.id === auId)?.label ?? auKey;
   })();

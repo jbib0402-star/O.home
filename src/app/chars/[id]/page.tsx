@@ -128,7 +128,9 @@ function CharDetailInner() {
     } : x)));
     setAuCreateOpen(false);
     setAuCreateName('');
-    router.push(`/chars/${ch.id}/edit?au=${encodeURIComponent(key)}`);
+    // 서버 저장보다 편집 페이지 이동이 먼저 끝나도 사용자가 입력한 AU 이름을 잃지 않게
+    // 생성 시점의 label을 함께 전달한다. 편집 페이지는 저장된 프로필 label을 우선한다.
+    router.push(`/chars/${ch.id}/edit?au=${encodeURIComponent(key)}&aulabel=${encodeURIComponent(label)}`);
   };
 
   const deleteCharacterAu = (key: string) => {

@@ -2,7 +2,7 @@
 // 캐릭터 등록/프로필 편집 — 전용 페이지 폼 (4.4)
 // 모달이 아니라 페이지라 잘못 클릭해도 닫히지 않음. 탭 내용은 별도 편집 화면으로 전환해 작성.
 // 두상(목록용)과 전신/아트(상세용)를 서로 다른 파일 참조로 저장한다.
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Character, CharTab, ColorChip, Visibility, CharGrant } from '@/lib/charStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
@@ -46,6 +46,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
 
   const [name, setName] = useState(initial?.name ?? '');
   const [profileAuLabel, setProfileAuLabel] = useState(auLabel ?? '');
+  // 서버에서 AU가 늦게 도착해 prop이 갱신되면 아직 손대지 않은 입력만 동기화한다.
+  // 사용자가 직접 수정하기 시작한 뒤에는 외부 값으로 입력 내용을 덮어쓰지 않는다.
+  const profileAuLabelDirty = useRef(false);
   const [slug, setSlug] = useState('');   // 페이지 주소 /chars/{slug} (v1.9 — 신규 등록, 비우면 자동)
   const [sub, setSub] = useState(initial?.sub ?? '');
   const [color, setColor] = useState(initial?.color ?? '#5d636d');
@@ -78,6 +81,11 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [lb, setLb] = useState<number | null>(null);   // 아트 썸네일 클릭 → 원본 보기
   // 화면 전환: 메인 폼 / 탭 전용 편집 화면
   const [view, setView] = useState<'main' | string>('main');
+
+  useEffect(() => {
+    if (!auLabelEditable || profileAuLabelDirty.current) return;
+    setProfileAuLabel(auLabel ?? '');
+  }, [auLabel, auLabelEditable]);
 
   const addArts = (list: FileList | null) => {
     if (!list || list.length === 0) return;
@@ -322,7 +330,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
           <div style={{ display: 'grid', gap: 9 }}>
             {auMode && auLabelEditable && (
               <>
-                <KInput placeholder="AU 이름" value={profileAuLabel} onChange={e => setProfileAuLabel(e.target.value)} />
+                <KInput placeholder="AU 이름" value={profileAuLabel} onChange={e => {
+                  profileAuLabelDirty.current = true;
+                  setProfileAuLabel(e.target.value);
+                }} />
                 <p className="hint" style={{ margin: 0 }}>AU 선택 목록에 표시되는 이름입니다.</p>
               </>
             )}

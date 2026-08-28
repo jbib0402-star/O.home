@@ -5,7 +5,7 @@ import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED } from '@/lib/charStore';
+import { Character, CHAR_SEED, charThumbRef } from '@/lib/charStore';
 import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/sectionStore';
 import { SearchBar, FitText } from '@/components/ui/Kit';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -55,7 +55,7 @@ function CharsInner() {
               style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}
               onClick={() => { if (!editOn) router.push(`/chars/${c.id}`); }}>
               <div className="thumb" style={{ position: 'relative' }}>
-                <CroppedBlobImg fileRef={c.arts?.[0] ?? c.thumbId} crop={c.thumbCrop} ph={c.thumbClass}
+                <CroppedBlobImg fileRef={charThumbRef(c)} crop={c.thumbCrop} ph={c.thumbClass}
                   label={priv ? '비공개' : '3:4'} />
               </div>
               <div className="nm">

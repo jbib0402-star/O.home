@@ -1,12 +1,14 @@
 'use client';
 // 캐릭터 프로필 편집 페이지 (4.4) — 전용 페이지 (모달 아님)
-// ?au=<relId:auId> 로 진입하면 그 AU 전용 프로필 편집 (v1.9 사용자 확정) —
+// ?au=<relId:auId|charau:id> 로 진입하면 그 AU 전용 프로필 편집 —
 // 아예 새 프로필처럼 이름·스펙·아트·탭 전부 그 AU만의 값으로 작성. base는 건드리지 않음.
 import React, { Suspense } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charGrant, charWithAu, Relation, REL_SEED } from '@/lib/charStore';
+import {
+  Character, CHAR_SEED, charGrant, charWithAu, isCharacterAuKey, Relation, REL_SEED,
+} from '@/lib/charStore';
 import { CharEditForm } from '@/components/chars/CharEditForm';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle, EditableDesc } from '@/components/ui/PageText';
@@ -17,7 +19,7 @@ function CharEditInner() {
   const { user, isAdmin } = useAuth();
   const toast = useToast();
   const params = useSearchParams();
-  const auKey = params.get('au');   // `${relId}:${auId}`
+  const auKey = params.get('au');   // 자관 `${relId}:${auId}` 또는 캐릭터 자체 `charau:${id}`
   const [chars, setChars, loaded] = useLocalList<Character>('ohome.chars.v1', CHAR_SEED);
   const [rels] = useLocalList<Relation>('ohome.rels.v1', REL_SEED);
 
@@ -33,9 +35,11 @@ function CharEditInner() {
     );
   }
 
-  // AU 라벨 (타이틀 표시용)
+  const charAu = auKey && isCharacterAuKey(auKey) ? ch.auProfiles?.[auKey] : undefined;
+  // AU 라벨 (타이틀 표시용) — 캐릭터 자체 AU는 프로필 안 label, 자관 AU는 Relation.aus
   const auLabel = (() => {
     if (!auKey) return null;
+    if (isCharacterAuKey(auKey)) return charAu?.label ?? 'AU';
     const [relId, auId] = auKey.split(':');
     return rels.find(r => r.id === relId)?.aus.find(a => a.id === auId)?.label ?? auKey;
   })();
@@ -51,7 +55,8 @@ function CharEditInner() {
       : {
         ...ch, name: '', sub: '', basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
         specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
-        arts: [], artId: undefined, thumbId: undefined, thumbCrop: undefined,
+        arts: [], artId: undefined, artUrl: undefined,
+        thumbId: undefined, thumbCrop: undefined, artCrop: undefined,
       })
     : ch;
 
@@ -64,8 +69,10 @@ function CharEditInner() {
       <CharEditForm
         initial={formInitial}
         auMode={!!auKey}
+        auLabel={auLabel ?? undefined}
+        auLabelEditable={!!auKey && isCharacterAuKey(auKey)}
         onCancel={() => router.push(back)}
-        onSave={c => {
+        onSave={(c, savedAuLabel) => {
           if (auKey) {
             // AU 프로필 스냅샷 저장 — base 필드는 그대로, auProfiles[auKey]만 폼 값 전체로
             setChars(chars.map(x => (x.id === ch.id ? {
@@ -75,8 +82,11 @@ function CharEditInner() {
                 [auKey]: {
                   // 폼 밖에서 정한 값(상세 아트 위치 등)은 그대로 두고 폼 값만 덮어쓴다 (v2.0)
                   ...x.auProfiles?.[auKey],
+                  ...(isCharacterAuKey(auKey) ? {
+                    label: savedAuLabel ?? auLabel ?? 'AU', source: 'character' as const,
+                  } : {}),
                   name: c.name, sub: c.sub, color: c.color, themeMode: c.themeMode,
-                  colors: c.colors, colorTipMode: c.colorTipMode,
+                  colors: c.colors, colorBd: c.colorBd, colorTipMode: c.colorTipMode,
                   specs: c.specs, tabs: c.tabs, basicHtml: c.basicHtml,
                   arts: c.arts, thumbId: c.thumbId, thumbCrop: c.thumbCrop,
                   fontId: c.fontId, nameSize: c.nameSize, bodyFontId: c.bodyFontId,

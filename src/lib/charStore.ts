@@ -42,7 +42,7 @@ export interface Character {
   /** 상세 페이지 중앙 아트의 위치 (v2.0) — 리스트 썸네일과 보이는 크기·비율이 달라
    *  같은 크롭을 쓰면 원하는 부분이 안 나온다. 따로 잡으면 상세에서는 이 값을 쓴다. */
   artCrop?: import("@/components/ui/CropEditor").CropValue;
-  arts?: string[];       // 아트 목록 (IndexedDB — 첫 장이 대표 풀 아트이자 썸네일 원본)
+  arts?: string[];       // 전신/아트 목록 (IndexedDB — 첫 장이 상세 대표 전신)
   artId?: string;        // (구) 단일 풀 아트
   artUrl?: string;       // (구) 풀 아트 URL
   fontId?: string;       // 전용 폰트 — 이름·타이틀 (5.1)
@@ -54,8 +54,9 @@ export interface Character {
   // 회원-캐릭터 연결 (3차, v1.9) — 상대 캐릭터에 회원 권한 부여:
   // play = 역극에서 이 캐릭터로 발화 가능, edit = 캐릭터 편집까지 가능 (play 포함)
   grants?: CharGrant[];
-  // AU별 캐릭터 프로필 (v1.9) — 키 `${relId}:${auId}`. 자관에 AU를 추가하면 멤버 캐릭터
-  // 상세 우상단에 AU 리스트가 뜨고, 선택 시 프로필 전체가 이 값으로 전환.
+  // AU별 캐릭터 프로필 (v1.9) — 자관 AU는 `${relId}:${auId}`, 캐릭터 자체 AU는 `charau:${id}`.
+  // namespace를 나눠 두 종류가 같은 캐릭터에서 함께 동작해도 키가 충돌하지 않는다.
+  // 상세 상단에 AU 리스트가 뜨고, 선택 시 프로필 전체가 이 값으로 전환.
   // 편집은 /chars/[id]/edit?au= — AU 전용 편집 페이지에서 아예 새 프로필처럼 작성 (사용자 확정)
   auProfiles?: Record<string, AuCharProfile>;
 }
@@ -63,6 +64,9 @@ export interface Character {
 /** AU 캐릭터 프로필 (v1.9 전면 확장) — 이름·키·성별부터 전부 AU별로 달라질 수 있음.
  *  지정된 필드만 base를 대체 (구버전 basicHtml/arts만 있는 데이터도 그대로 동작) */
 export interface AuCharProfile {
+  /** 캐릭터 자체 AU에서만 사용. 자관 AU의 이름은 Relation.aus가 소유한다. */
+  label?: string;
+  source?: 'character';
   basicHtml?: string;
   arts?: string[];
   name?: string;
@@ -70,6 +74,7 @@ export interface AuCharProfile {
   color?: string;
   themeMode?: 'default' | 'custom';
   colors?: ColorChip[];
+  colorBd?: string;
   colorTipMode?: 'hex' | 'both' | 'label';
   specs?: { label: string; value: string }[];
   tabs?: CharTab[];
@@ -79,6 +84,15 @@ export interface AuCharProfile {
   fontId?: string;
   nameSize?: number;     // 상세 큰 이름 크기 px (v2.0)
   bodyFontId?: string;
+}
+
+/** 캐릭터 자체 AU key namespace — 기존 자관 AU(`${relId}:${auId}`)와 충돌하지 않는다. */
+export const CHAR_AU_PREFIX = 'charau:';
+export const isCharacterAuKey = (key?: string | null): boolean => !!key?.startsWith(CHAR_AU_PREFIX);
+
+/** ORIGINAL 캐릭터의 목록용 두상. 구 데이터는 대표 아트까지 순서대로 fallback한다. */
+export function charThumbRef(c: Pick<Character, 'thumbId' | 'arts' | 'artId' | 'artUrl'>): string | undefined {
+  return c.thumbId ?? c.arts?.[0] ?? c.artId ?? c.artUrl;
 }
 
 /** AU 프로필을 합성한 표시용 캐릭터 — AU에서 지정한 필드만 대체 (상세·편집 프리필 공용) */
@@ -92,6 +106,7 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     ...(p.color !== undefined ? { color: p.color } : {}),
     ...(p.themeMode !== undefined ? { themeMode: p.themeMode } : {}),
     ...(p.colors !== undefined ? { colors: p.colors } : {}),
+    ...(p.colorBd !== undefined ? { colorBd: p.colorBd } : {}),
     ...(p.colorTipMode !== undefined ? { colorTipMode: p.colorTipMode } : {}),
     ...(p.specs !== undefined ? { specs: p.specs } : {}),
     ...(p.tabs !== undefined ? { tabs: p.tabs } : {}),
@@ -102,9 +117,12 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     // 그 AU의 그림인 줄 알게 된다. 자관 전신이 이미 같은 규칙이다(「AU는 자기 전신만」).
     arts: p.arts ?? [],
     artId: p.arts?.[0],
+    artUrl: undefined,
     thumbId: p.thumbId,
     thumbCrop: p.thumbCrop,
+    artCrop: p.artCrop,
     ...(p.fontId !== undefined ? { fontId: p.fontId } : {}),
+    ...(p.nameSize !== undefined ? { nameSize: p.nameSize } : {}),
     ...(p.bodyFontId !== undefined ? { bodyFontId: p.bodyFontId } : {}),
   };
 }

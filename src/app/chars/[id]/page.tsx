@@ -6,17 +6,52 @@
 import React, { Suspense, useEffect, useMemo, useRef, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
-import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charGrant, charWithAu, chipBorder, Relation, REL_SEED } from '@/lib/charStore';
+import { newId, useLocalList } from '@/lib/postStore';
+import {
+  AuCharProfile, Character, CHAR_AU_PREFIX, CHAR_SEED, charGrant, charThumbRef, charWithAu,
+  chipBorder, isCharacterAuKey, Relation, REL_SEED,
+} from '@/lib/charStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useFonts } from '@/lib/fontStore';
 import { useTheme } from '@/lib/ThemeProvider';
 import { createPortal } from 'react-dom';
-import { BlobImg, useBlobUrl } from '@/lib/blobStore';
+import { useBlobUrl } from '@/lib/blobStore';
 import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
 
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
-import { ConfirmModal } from '@/components/ui/Modal';
+import { ConfirmModal, Modal } from '@/components/ui/Modal';
+import { KInput } from '@/components/ui/Kit';
+
+type CharAuChoice = {
+  key: string;
+  label: string;
+  source: 'character' | 'relation';
+  relName?: string;
+};
+
+/** 캐릭터 자체 AU 생성 직후의 독립 프로필. 이미지는 비워 ORIGINAL을 자동 상속하지 않는다. */
+function blankCharacterAu(label: string, base: Character): AuCharProfile {
+  return {
+    label,
+    source: 'character',
+    name: '',
+    sub: '',
+    basicHtml: '',
+    tabs: [],
+    specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
+    color: base.color,
+    themeMode: 'default',
+    colors: [],
+    colorTipMode: 'hex',
+    arts: [],
+    thumbId: undefined,
+    thumbCrop: undefined,
+    artCrop: undefined,
+    fontId: base.fontId ?? 'serif',
+    nameSize: base.nameSize ?? 38,
+    bodyFontId: base.bodyFontId ?? 'default',
+  };
+}
 
 function CharDetailInner() {
   const { id } = useParams<{ id: string }>();
@@ -29,18 +64,29 @@ function CharDetailInner() {
   const [tab, setTab] = useState('basic');
   const [artIdx, setArtIdx] = useState(0);
   const [delAsk, setDelAsk] = useState(false);   // 캐릭터 삭제 확인
+  const [auCreateOpen, setAuCreateOpen] = useState(false);
+  const [auCreateName, setAuCreateName] = useState('');
+  const [auDelAsk, setAuDelAsk] = useState<string | null>(null);
   const infoRef = useRef<HTMLDivElement>(null);
 
   const ch = chars.find(c => c.id === id);
 
-  // AU 프로필 (v1.9) — 이 캐릭터가 속한 자관들의 AU 리스트 (base 제외), 우상단에 썸네일로
-  const charAus = useMemo(() => (ch
-    ? rels.flatMap(r => r.members.some(m => m.charId === ch.id)
-      ? r.aus.filter(a => a.id !== 'base').map(a => ({ key: `${r.id}:${a.id}`, label: a.label, relName: r.name }))
-      : [])
-    : []), [rels, ch]);
+  // 캐릭터 자체 AU와 자관 AU를 함께 표시하되 namespace/source를 분리해 충돌을 막는다.
+  const charAus = useMemo<CharAuChoice[]>(() => {
+    if (!ch) return [];
+    const own = Object.entries(ch.auProfiles ?? {})
+      .filter(([key, p]) => isCharacterAuKey(key) || p.source === 'character')
+      .map(([key, p]) => ({ key, label: p.label?.trim() || 'AU', source: 'character' as const }));
+    const relation = rels.flatMap(r => r.members.some(m => m.charId === ch.id)
+      ? r.aus.filter(a => a.id !== 'base').map(a => ({
+        key: `${r.id}:${a.id}`, label: a.label, relName: r.name, source: 'relation' as const,
+      }))
+      : []);
+    return [...own, ...relation];
+  }, [rels, ch]);
   // AU 편집에서 ?au= 로 돌아오면 그 AU가 선택된 채 시작
   const [auKey, setAuKey] = useState<string | null>(() => params.get('au'));
+  const canEdit = !!ch && (isAdmin || charGrant(ch, user?.id) === 'edit');
   // 대표 아트 우클릭 → 상세 화면에 보일 위치 조정 (v2.0)
   const [artCtx, setArtCtx] = useState<{ x: number; y: number; ref: string } | null>(null);
   // 편집 중인 아트 참조 + 그때 실제 표시 영역의 가로/세로 비 (3:4가 아니라 화면 높이에 따라 달라진다)
@@ -70,6 +116,32 @@ function CharDetailInner() {
       if (!auKey) return { ...x, artCrop: c };
       return { ...x, auProfiles: { ...x.auProfiles, [auKey]: { ...x.auProfiles?.[auKey], artCrop: c } } };
     }));
+  };
+
+  const createCharacterAu = () => {
+    const label = auCreateName.trim();
+    if (!ch || !label || !canEdit) return;
+    const key = `${CHAR_AU_PREFIX}${newId()}`;
+    setChars(chars.map(x => (x.id === ch.id ? {
+      ...x,
+      auProfiles: { ...x.auProfiles, [key]: blankCharacterAu(label, x) },
+    } : x)));
+    setAuCreateOpen(false);
+    setAuCreateName('');
+    router.push(`/chars/${ch.id}/edit?au=${encodeURIComponent(key)}`);
+  };
+
+  const deleteCharacterAu = (key: string) => {
+    if (!ch || !isCharacterAuKey(key) || !canEdit) return;
+    setChars(chars.map(x => {
+      if (x.id !== ch.id) return x;
+      const nextProfiles = { ...(x.auProfiles ?? {}) };
+      delete nextProfiles[key];
+      return { ...x, auProfiles: Object.keys(nextProfiles).length ? nextProfiles : undefined };
+    }));
+    setAuDelAsk(null);
+    setAuKey(null);
+    router.replace(`/chars/${ch.id}`);
   };
 
   // AU 전환 시 탭 구성·아트가 달라지므로 리셋
@@ -136,7 +208,7 @@ function CharDetailInner() {
         <div className="head-actions">
           {/* 관리자 또는 「편집까지」 권한 회원 (3차 회원-캐릭터 연결, v1.9)
               — AU 선택 상태의 EDIT은 그 AU 전용 프로필 편집으로 진입 */}
-          {(isAdmin || charGrant(ch, user?.id) === 'edit') && (
+          {canEdit && (
             <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>
           )}
           {isAdmin && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
@@ -150,30 +222,61 @@ function CharDetailInner() {
             { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
           ]} />
       </div>
-      {/* AU 프로필 리스트 (v1.9) — 자관에 추가된 AU가 있으면 우상단, 각 AU의 저장 썸네일 기준 */}
-      {charAus.length > 0 && (
-        <div className="au-list" style={{ justifyContent: 'flex-end', marginBottom: 10 }}>
-          <div className={`au-item ${auKey === null ? 'on' : ''} ph ${ch.thumbClass}`} style={{ borderColor: auKey === null ? 'var(--accent)' : 'var(--line)' }}
+      {/* 캐릭터 자체 AU + 자관 AU. 새 자체 AU는 charau: namespace로 별도 저장한다. */}
+      <div className="char-au-panel">
+        <div className="char-au-title">AU PROFILE</div>
+        <div className="char-au-list">
+          <button className={`char-au-chip ${auKey === null ? 'on' : ''}`}
             onClick={() => setAuKey(null)}>
-            {(ch.thumbId || ch.arts?.[0]) && <CroppedBlobImg fileRef={ch.thumbId ?? ch.arts?.[0]} crop={ch.thumbCrop} ph={ch.thumbClass} />}
-            <small>원본</small>
-          </div>
+            <span className={`char-au-face ph ${ch.thumbClass}`}>
+              {charThumbRef(ch) && <CroppedBlobImg fileRef={charThumbRef(ch)} crop={ch.thumbCrop} ph={ch.thumbClass} />}
+            </span>
+            <b>ORIGINAL</b>
+          </button>
           {charAus.map(a => {
-            const av = charWithAu(ch, a.key);   // 이 AU에 넣은 썸네일 (안 넣었으면 색 플레이스홀더, v2.0)
+            const av = charWithAu(ch, a.key);
+            // 기존 자관 AU는 종전과 같이 그 AU의 첫 아트를 썸네일 fallback으로 허용한다.
+            // 새 캐릭터 자체 AU는 두상/전신 독립 규칙에 따라 thumbId만 쓴다.
+            const faceRef = av.thumbId ?? (a.source === 'relation' ? av.arts?.[0] : undefined);
             return (
-              <div key={a.key} className={`au-item ${auKey === a.key ? 'on' : ''} ph ${ch.thumbClass}`}
-                style={{ borderColor: auKey === a.key ? 'var(--accent)' : 'var(--line)' }}
-                data-tip={`${a.relName} · ${a.label}`}
+              <button key={a.key} className={`char-au-chip ${auKey === a.key ? 'on' : ''}`}
+                data-tip={a.source === 'relation' ? `${a.relName} · 자관 AU` : '캐릭터 자체 AU'}
                 onClick={() => setAuKey(a.key)}>
-                {(av.thumbId || av.arts?.[0]) && (
-                  <CroppedBlobImg fileRef={av.thumbId ?? av.arts?.[0]} crop={av.thumbCrop} ph={ch.thumbClass} />
-                )}
-                <small>{a.label}</small>
-              </div>
+                <span className={`char-au-face ph ${ch.thumbClass}`}>
+                  {faceRef && <CroppedBlobImg fileRef={faceRef} crop={av.thumbCrop} ph={ch.thumbClass} />}
+                </span>
+                <b>{a.label}</b>
+              </button>
             );
           })}
+          {canEdit && (
+            <button className="char-au-chip add" onClick={() => setAuCreateOpen(true)}>
+              <span className="char-au-plus">＋</span><b>AU</b>
+            </button>
+          )}
         </div>
-      )}
+        {canEdit && auKey && isCharacterAuKey(auKey) && (
+          <button className="btn btn-ghost char-au-delete" onClick={() => setAuDelAsk(auKey)}>AU 삭제</button>
+        )}
+      </div>
+      <Modal open={auCreateOpen} small title="새 AU 프로필"
+        desc="AU 이름을 입력하면 독립된 프로필을 만든 뒤 바로 편집 화면으로 이동합니다."
+        onClose={() => { setAuCreateOpen(false); setAuCreateName(''); }}
+        actions={<>
+          <button className="btn btn-ghost" onClick={() => { setAuCreateOpen(false); setAuCreateName(''); }}>CANCEL</button>
+          <button className="btn btn-dark" disabled={!auCreateName.trim()} onClick={createCharacterAu}>CREATE</button>
+        </>}>
+        <KInput autoFocus placeholder="예: 학원 AU, 판타지 AU" value={auCreateName}
+          onChange={e => setAuCreateName(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') createCharacterAu(); }} />
+      </Modal>
+      <ConfirmModal open={auDelAsk !== null} title="AU 프로필을 삭제하시겠습니까?"
+        body={`「${charAus.find(a => a.key === auDelAsk)?.label ?? 'AU'}」의 프로필과 이미지 연결 정보가 삭제됩니다. ORIGINAL 캐릭터와 자관 AU는 삭제되지 않습니다.`}
+        onClose={() => setAuDelAsk(null)}
+        buttons={[
+          { label: 'DELETE', kind: 'accent', onClick: () => { if (auDelAsk) deleteCharacterAu(auDelAsk); } },
+          { label: 'CANCEL', kind: 'ghost', onClick: () => setAuDelAsk(null) },
+        ]} />
       {/* AU 미등록 (v1.9 사용자 확정) — base를 보여주지 않고 그 AU에 맞춰 캐릭터를 새로 등록 */}
       {auKey && !auRegistered ? (
         <div className="panel" style={{ textAlign: 'center', padding: 56 }}>

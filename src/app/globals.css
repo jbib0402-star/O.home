@@ -852,6 +852,7 @@ body.edit-on .main-grid{grid-template-columns:230px 1fr 260px}
 .links-banner img{display:block;width:100%;height:100%;object-fit:contain}
 .links-banner span{max-width:100%;padding:3px 5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .links-banner:hover{border-color:var(--sub)}
+.links-banner.is-editing{pointer-events:none}
 .links-empty{margin:0}
 .links-editor{display:grid;gap:10px}
 .links-edit-row{display:flex;gap:8px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);width:100%}

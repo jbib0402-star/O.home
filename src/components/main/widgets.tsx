@@ -643,11 +643,18 @@ export function LinksWidget({ conf }: { conf: WidgetConf }) {
             const internal = normalized.startsWith('/') && !normalized.startsWith('//');
             const href = external || internal ? normalized : '';
             return (
-              <a key={item.id} className="links-banner" href={href || undefined}
+              <a key={item.id} className={`links-banner ${editOn ? 'is-editing' : ''}`}
+                href={!editOn && href ? href : undefined}
                 title={item.title} aria-label={`${item.title} 홈페이지로 이동`}
-                target={external ? '_blank' : undefined}
-                rel={external ? 'noopener noreferrer' : undefined}
+                aria-disabled={editOn || undefined}
+                tabIndex={editOn ? -1 : undefined}
+                target={!editOn && external ? '_blank' : undefined}
+                rel={!editOn && external ? 'noopener noreferrer' : undefined}
                 onClick={e => {
+                  if (editOn) {
+                    e.preventDefault();
+                    return;
+                  }
                   if (!external && href) {
                     e.preventDefault();
                     router.push(href);

@@ -11,7 +11,7 @@ export type WidgetType =
   | 'banner' | 'member'                 // 고정 요소 (삭제 불가)
   | 'menu' | 'memo' | 'diary' | 'latest'
   | 'dday' | 'todo' | 'upcoming' | 'freetext' | 'deco' | 'memoboard'
-  | 'apply';   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · apply = 커미션 신청자 (v2.0)
+  | 'apply' | 'links';   // 'image'는 deco(장식 이미지+링크)로 일원화 (v1.9) · apply = 커미션 신청자 (v2.0)
 
 export interface WidgetConf {
   id: string;
@@ -54,6 +54,7 @@ export const WIDGET_META: Record<WidgetType, { title: string; desc: string }> = 
   deco: { title: '이미지', desc: '패널 없이 이미지만' },
   memoboard: { title: 'STICKY', desc: '스티커 메모 미니보드 — 클릭 시 메모장 (4.6)' },
   apply: { title: 'COMMISSION', desc: '커미션 신청자 — 마감 빠른 순 (몇 명까지 볼지 설정)' },
+  links: { title: 'LINKS', desc: '친구 홈페이지의 작은 링크 배너 모음' },
 };
 
 /** 같은 종류를 여러 개 추가할 수 있는 위젯 (v1.9 사용자 확정 — 나머지는 하나만) */
@@ -230,7 +231,7 @@ export function MainStoreProvider({ children }: { children: React.ReactNode }) {
       const w: WidgetConf = {
         id, type, col, enabled: true, tx: 0, ty: 0,
         ax: colX[col], ay: maxY,
-        settings: type === 'freetext' ? { text: '자유 텍스트' } : {},
+        settings: type === 'freetext' ? { text: '자유 텍스트' } : type === 'links' ? { items: [] } : {},
       };
       return { ...s, widgets: [...s.widgets, w], mobileOrder: [...s.mobileOrder, id] };
     });
@@ -307,6 +308,27 @@ export function useMainStore(): MainCtx {
   const ctx = useContext(Ctx);
   if (!ctx) throw new Error('useMainStore must be used within MainStoreProvider');
   return ctx;
+}
+
+/* ---------- 친구 홈페이지 링크 배너 ---------- */
+
+export interface LinkBannerItem {
+  id: string;
+  title: string;
+  url: string;
+  imgId?: string;
+}
+
+/** 저장 데이터가 오래됐거나 일부 필드가 비어 있어도 렌더러와 편집기가 안전하게 읽는다. */
+export function linkBannerItems(settings: Record<string, unknown>): LinkBannerItem[] {
+  const items = settings.items;
+  if (!Array.isArray(items)) return [];
+  return items.filter((item): item is LinkBannerItem =>
+    !!item && typeof item === 'object'
+    && typeof item.id === 'string'
+    && typeof item.title === 'string'
+    && typeof item.url === 'string'
+    && (item.imgId == null || typeof item.imgId === 'string'));
 }
 
 /* ---------- 이미지 위젯 슬라이드 (v2.0) ---------- */

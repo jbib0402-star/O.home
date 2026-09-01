@@ -166,6 +166,9 @@ export interface RelMember {
   nameSize?: number;
   quoteColor?: string;           // 히어로 대사 글씨색 (페어, v1.9 — 기본 #d7dae0)
   quoteMarkColor?: string;       // 히어로 대사 따옴표색 (기본 포인트 소프트)
+  /** 이 관계에서만 사용하는 선택 서술. 구형 데이터에는 없으며 빈 값이면 상세에서 숨긴다. */
+  appearance?: string;
+  features?: string;
 }
 
 export interface TlSay { charId: string; text: string }
@@ -346,6 +349,11 @@ export interface RelAu {
   theme?: { mode: 'site' | 'custom'; color?: string; tone?: 'dark' | 'light' };
 }
 
+export interface RelationMiniImage {
+  id: string;
+  imgId: string;
+}
+
 export interface Relation {
   id: string;
   name: string;
@@ -387,6 +395,8 @@ export interface Relation {
   cp?: RelCpTag;                 // 자관 기본 CP/NCP (등록 시 선택, v1.9)
   fullFront?: string;            // 전신 모드에서 앞에 보일 캐릭터 id (v1.9 — 미리보기에서 클릭 선택)
   pairRight?: string;            // 페어에서 오른쪽 자리에 둘 캐릭터 id (v2.0 — 없으면 등록 순서대로)
+  /** 두 멤버가 함께 사용하는 장식 이미지. 대표 아트와 별도이며 최대 8장이다. */
+  miniImages?: RelationMiniImage[];
   /** 상세 중앙 일러가 어디를 보여 줄지 (v2.0 사용자 요청) — 리스트 썸네일(thumbCrop)과 별개.
     *  **이미지 참조를 키로** 두어 여러 장을 각각 잡을 수 있고, AU의 일러도 같은 자리에 담긴다
     *  (참조가 다르므로 섞이지 않는다). 원본은 건드리지 않는다. */

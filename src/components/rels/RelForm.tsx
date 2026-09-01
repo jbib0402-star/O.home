@@ -512,12 +512,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
           </section>
         )}
 
-        {/* 전신 이미지 (v1.9) — 페어 좌/우 캐릭터, 미리보기에서 드래그=크기 · 클릭=앞으로 */}
+        {/* 전신 이미지 — 중앙 관계 일러스트 가장자리에 투명 전신을 겹쳐 표시한다. */}
         {pairMembers.length > 0 && (
           <>
             <label className="k-label" style={{ margin: 0 }}>
               {auObj ? `전신 이미지 — ${auObj.label} AU` : '전신 이미지'} <span style={{ fontWeight: 400, color: 'var(--faint)' }}>
-                — 중앙 전신 모드의 좌/우 · 미리보기에서 드래그=크기, 클릭=앞으로</span>
+                — 중앙 일러스트 위 좌/우 합성 · 투명 배경 PNG/WebP 권장</span>
             </label>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {pairMembers.map(m => {
@@ -545,16 +545,13 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
               })}
             </div>
             {Object.keys(fulls).length > 0 && (
-              /* 실제 표시와 같은 비율(3/4.1)·같은 배치(fb 좌우 박스) — 여기서 잡은 크기가 상세 그대로 (v1.9) */
-              <div style={{
-                position: 'relative', width: '100%', maxWidth: 340, margin: '0 auto', aspectRatio: '3/4.1', borderRadius: 10,
-                overflow: 'hidden', background: 'linear-gradient(180deg,#262b33,#181b20)', border: '1px solid var(--line)',
-              }}>
+              /* 상세와 같은 중앙 스테이지·좌우 슬롯 좌표계 — 여기서 잡은 위치와 크기가 그대로 보인다. */
+              <div className="rel-editorial-stage rel-editorial-stage-preview">
+                <div className="rel-editorial-art">
+                  {arts[0] ? <MiniImageThumb item={arts[0]} /> : <div className="ph" style={{ width: '100%', height: '100%' }} />}
+                </div>
                 {pairMembers.map((m, i) => (
-                  <div key={m.charId} style={{
-                    position: 'absolute', width: '62%', bottom: '-2%',
-                    top: i === 0 ? '5%' : '12%',
-                    ...(i === 0 ? { left: '-4%' } : { right: '-4%' }),
+                  <div key={m.charId} className={`rel-editorial-full rel-editorial-full-edit rel-editorial-full-${i === 0 ? 'left' : 'right'}`} style={{
                     zIndex: (fullFront ?? pairMembers[1]?.charId) === m.charId ? 3 : 2,
                   }}>
                     <FullPrevImg draft={fulls[m.charId]}
@@ -579,7 +576,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                 )}
               </div>
             )}
-            <p className="hint" style={{ margin: '4px 0 0' }}>드래그 = 위치 · 휠 = 크기 · 우클릭 = 앞으로/뒤로 — 미리보기 비율이 상세 화면과 동일합니다</p>
+            <p className="hint" style={{ margin: '4px 0 0' }}>드래그 = 위치 · 휠 = 크기 · 우클릭 = 앞으로/뒤로 — 중앙 일러스트와 합성된 모습 그대로 미리 볼 수 있습니다</p>
 
             {/* 좌/우 한마디 문구 (v2.0 사용자 발견 — 색만 있고 문구 칸이 없었다) */}
             <label className="k-label" style={{ margin: '10px 0 0' }}>한마디 — 상단 좌/우 대사</label>

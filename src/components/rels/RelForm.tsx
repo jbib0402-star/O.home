@@ -3,14 +3,14 @@
 // 아트 다중 등록(첫 장 = 대표 · 리스트 썸네일 4:3 크롭) · 등록 시 내 캐릭터 연동
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Character, Relation, Visibility, RelCpTag, RelMember, auMember, auStyle, fullShadow } from '@/lib/charStore';
+import { Character, Relation, Visibility, RelCpTag, RelMember, RelationMiniImage, auMember, auStyle, fullShadow } from '@/lib/charStore';
 import { ColorField } from '@/components/ui/ColorField';
 import { isValidSlug, slugify } from '@/lib/link';
 import { CP_LABEL } from '@/lib/relqStore';
 import { newId } from '@/lib/postStore';
 import { useFonts } from '@/lib/fontStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
-import { KInput, KSelect, KCheck, KStep } from '@/components/ui/Kit';
+import { KInput, KTextarea, KSelect, KCheck, KStep } from '@/components/ui/Kit';
 import { CropEditor, CropValue, CropImg } from '@/components/ui/CropEditor';
 import { DragList } from '@/components/ui/DragList';
 import { Lightbox } from '@/components/ui/Lightbox';
@@ -50,6 +50,8 @@ export interface RelFormValue {
   themeColor?: string;          // 별도 테마컬러 (custom일 때)
   themeTone?: 'dark' | 'light'; // 테마컬러의 다크/라이트 느낌
   cp: RelCpTag;              // CP/NCP (v1.9) — AU별로는 AU 관리에서 따로 지정
+  memberDetails?: Record<string, { appearance?: string; features?: string }>;
+  miniImages?: RelationMiniImage[];
   fulls?: Record<string, string | undefined>;  // 멤버별 전신 이미지 (v1.9 — charId → blob id)
   fullScales?: Record<string, number>;         // 전신 크기 % (휠 조절)
   fullOffsets?: Record<string, { x: number; y: number }>; // 전신 위치 오프셋 % (드래그, v1.9)
@@ -154,6 +156,14 @@ function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   return <CropImg src={src} crop={crop} />;
 }
 
+function MiniImageThumb({ item }: { item: ArtItem }) {
+  const loaded = useBlobUrl(item.ref);
+  const src = item.url ?? loaded;
+  if (!src) return <div className="ph" style={{ width: '100%', height: '100%' }} />;
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />;
+}
+
 export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSave, onCancel }: {
   initial: Relation | null;          // null = 신규 등록
   auId?: string;                     // AU 편집 모드 (v1.9) — 아트·캐치프레이즈·전신이 이 AU의 것
@@ -182,6 +192,9 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
     const refs = auObj ? (auObj.arts ?? []) : (initial?.arts ?? (initial?.thumbId ? [initial.thumbId] : []));
     return refs.map(r => ({ id: newId(), ref: r }));
   });
+  const [miniImages, setMiniImages] = useState<ArtItem[]>(() =>
+    (initial?.miniImages ?? []).map(x => ({ id: x.id, ref: x.imgId })));
+  const [miniLb, setMiniLb] = useState<number | null>(null);
   const [thumbCrop, setThumbCrop] = useState<CropValue | undefined>(initial?.thumbCrop);
   const [cropOpen, setCropOpen] = useState(false);
   const [lb, setLb] = useState<number | null>(null);   // 아트 썸네일 클릭 → 원본 보기
@@ -232,6 +245,10 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   // 전신 이미지 (v1.9 — 페어 · 수정 모드) — AU 편집이면 그 AU의 전신
   const pairMembers = !isNew && (initial!.kind ? initial!.kind === 'pair' : initial!.members.length === 2)
     ? initial!.members.slice(0, 2) : [];
+  const [memberDetails, setMemberDetails] = useState<Record<string, { appearance: string; features: string }>>(
+    () => Object.fromEntries(pairMembers.map(m => [m.charId, {
+      appearance: m.appearance ?? '', features: m.features ?? '',
+    }])));
   const [fulls, setFulls] = useState<Record<string, FullDraft>>(() => {
     const o: Record<string, FullDraft> = {};
     for (const m of pairMembers) {
@@ -293,6 +310,17 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
     });
   };
 
+  const addMiniImages = (list: FileList | null) => {
+    if (!list?.length) return;
+    const room = Math.max(0, 8 - miniImages.length);
+    if (room === 0) { toast('관계 공용 이미지는 최대 8장까지 등록할 수 있습니다'); return; }
+    const files = Array.from(list).slice(0, room);
+    if (files.length < list.length) toast('최대 8장까지만 추가했습니다');
+    setMiniImages(prev => [...prev, ...files.map(file => ({
+      id: newId(), file, url: URL.createObjectURL(file),
+    }))]);
+  };
+
   const save = async () => {
     if (!name.trim()) { toast('자관 이름을 입력해 주세요'); return; }
     // 페이지 주소 (v1.9) — 유효성·중복 검사
@@ -301,6 +329,9 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       if (existingIds?.includes(slug)) { toast('이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요'); return; }
     }
     const artIds = await Promise.all(arts.map(a => (a.file ? putBlob(a.file) : Promise.resolve(a.ref!))));
+    const savedMiniImages = await Promise.all(miniImages.map(async a => ({
+      id: a.id, imgId: a.file ? await putBlob(a.file) : a.ref!,
+    })));
     onSave({
       slug: isNew && slug ? slug : undefined,
       name: name.trim().toUpperCase(),
@@ -330,6 +361,8 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       themeColor: themeMode === 'custom' ? themeColor : undefined,
       themeTone: themeMode === 'custom' ? themeTone : undefined,
       cp,
+      memberDetails: pairMembers.length ? memberDetails : undefined,
+      miniImages: savedMiniImages,
       auName: auObj ? auName.trim() : undefined,
       qaHide: qaHide || undefined,
       fulls: pairMembers.length
@@ -442,6 +475,43 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
           ＋ ADD ART {arts.length === 0 && '(첫 장 등록 시 썸네일 크롭 지정)'}
         </button>
 
+        {!auObj && (
+          <section className="rel-mini-editor">
+            <div className="rel-mini-editor-head">
+              <div>
+                <label className="k-label">관계 공용 이미지</label>
+                <p className="hint">두 캐릭터가 함께 사용하는 작은 이미지 · 최대 8장 · 드래그로 순서 변경</p>
+              </div>
+              <span className="pill">{miniImages.length} / 8</span>
+            </div>
+            {miniImages.length > 0 && (
+              <DragList items={miniImages} keyOf={a => a.id} onReorder={setMiniImages}
+                render={(a, i) => (
+                  <div className="rel-mini-edit-row">
+                    <span className="drag-h" aria-label="순서 이동">⠿</span>
+                    <button type="button" className="rel-mini-edit-thumb" aria-label={`공용 이미지 ${i + 1} 크게 보기`}
+                      onClick={() => setMiniLb(i)}><MiniImageThumb item={a} /></button>
+                    <label className="btn btn-ghost rel-mini-replace">
+                      교체
+                      <input type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+                        const file = e.target.files?.[0]; e.target.value = '';
+                        if (file) setMiniImages(list => list.map(x => x.id === a.id
+                          ? { ...x, file, ref: undefined, url: URL.createObjectURL(file) } : x));
+                      }} />
+                    </label>
+                    <button type="button" className="fx" aria-label={`공용 이미지 ${i + 1} 삭제`}
+                      onClick={() => del.ask('이 공용 이미지를 삭제하시겠습니까?', () =>
+                        setMiniImages(list => list.filter(x => x.id !== a.id)))}>✕</button>
+                  </div>
+                )} />
+            )}
+            <input id="relMiniImagesF" type="file" accept="image/*" multiple style={{ display: 'none' }}
+              onChange={e => { addMiniImages(e.target.files); e.target.value = ''; }} />
+            <button type="button" className="btn btn-ghost" disabled={miniImages.length >= 8}
+              onClick={() => document.getElementById('relMiniImagesF')?.click()}>＋ 이미지 추가</button>
+          </section>
+        )}
+
         {/* 전신 이미지 (v1.9) — 페어 좌/우 캐릭터, 미리보기에서 드래그=크기 · 클릭=앞으로 */}
         {pairMembers.length > 0 && (
           <>
@@ -546,6 +616,30 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                   onChange={hex => setQuoteColors(s => ({ ...s, [m.charId]: { ...s[m.charId], mark: hex } }))} />
               </div>
             ))}
+
+            {!auObj && (
+              <section className="rel-member-copy-editor">
+                <label className="k-label">캐릭터별 관계 추가 정보</label>
+                <p className="hint">이 관계 페이지에서만 표시됩니다. 빈 항목은 방문자 화면에서 숨깁니다.</p>
+                {pairMembers.map((m, i) => (
+                  <div className="rel-member-copy-card" key={m.charId}>
+                    <b>{i === 0 ? 'A' : 'B'} · {memberNames?.[m.charId] ?? m.charId}</b>
+                    <label className="k-label">외관 서술</label>
+                    <KTextarea value={memberDetails[m.charId]?.appearance ?? ''} rows={4}
+                      placeholder="머리, 눈, 체형, 의상 등"
+                      onChange={e => setMemberDetails(s => ({ ...s, [m.charId]: {
+                        appearance: e.target.value, features: s[m.charId]?.features ?? '',
+                      } }))} />
+                    <label className="k-label">기타 특징</label>
+                    <KTextarea value={memberDetails[m.charId]?.features ?? ''} rows={4}
+                      placeholder="소지품, 습관, 관계 안에서 보이는 행동 등"
+                      onChange={e => setMemberDetails(s => ({ ...s, [m.charId]: {
+                        appearance: s[m.charId]?.appearance ?? '', features: e.target.value,
+                      } }))} />
+                  </div>
+                ))}
+              </section>
+            )}
           </>
         )}
 
@@ -832,6 +926,9 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
       {/* 아트 원본 보기 — 아직 저장 전 파일은 url, 저장된 것은 ref (Lightbox가 둘 다 처리) */}
       {lb !== null && (
         <Lightbox srcs={arts.map(a => a.url ?? a.ref ?? '')} index={lb} onClose={() => setLb(null)} />
+      )}
+      {miniLb !== null && (
+        <Lightbox srcs={miniImages.map(a => a.url ?? a.ref ?? '')} index={miniLb} onClose={() => setMiniLb(null)} />
       )}
       {del.element}
     </div>

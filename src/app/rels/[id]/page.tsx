@@ -31,18 +31,16 @@ import { Lightbox } from '@/components/ui/Lightbox';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 
-/** 전신 이미지 — 비율 유지, 하단 정렬, 크기 %는 자관 수정 미리보기에서 지정 (v1.9) */
-// 전신 그림자는 「그림자 직접 지정」의 색·강도를 따른다 (v2.0 사용자 요청) — 자관명 그림자와 같은 설정
-function FullImg({ refId, scale, offX = 0, offY = 0, shadow }: { refId: string; scale: number; offX?: number; offY?: number; shadow?: string }) {
-  const url = useBlobUrl(refId);
-  if (!url) return null;
+/** 대칭 화보용 전신 — 좌우 동일한 프레임 안에 원본 전체를 맞춘다. */
+function PairFull({ refId, name, side, onGo, shadow }: {
+  refId?: string; name: string; side: 'left' | 'right'; onGo: () => void; shadow?: string;
+}) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={url} alt="" draggable={false} style={{
-      position: 'absolute', bottom: `${offY}%`, left: `calc(50% + ${offX}%)`, transform: 'translateX(-50%)',
-      height: `${scale}%`, maxWidth: 'none',
-      filter: shadow,
-    }} />
+    <button type="button" className={`rel-editorial-full rel-editorial-full-${side}`}
+      aria-label={`${name} 캐릭터 상세 보기`} onClick={onGo}>
+      <BlobImg fileRef={refId} ph="" alt={`${name} 전신`} label={`${name} 전신`}
+        imgStyle={{ objectFit: 'contain', filter: shadow }} />
+    </button>
   );
 }
 
@@ -118,7 +116,8 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
   }, [ctx]);
   // 대표 이미지 = 프로필 사진 · 나머지 아트 = 아래 썸네일 줄 (없으면 줄 자체를 만들지 않는다)
   const arts = char?.arts ?? [];
-  const rep = char?.thumbId ?? arts[0];
+  // 전신을 두상으로 임의 크롭하지 않는다. 독립 두상이 없으면 플레이스홀더를 사용한다.
+  const rep = char?.thumbId;
   const rest = arts.filter(a => a !== rep);
   const gallery = (rep ? [rep, ...rest] : rest).filter(Boolean);
   if (!char) return null;
@@ -155,7 +154,7 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         </div>
       </div>
       <div className="specs">
-        {char.specs.map(s => <div key={s.label}><b>{s.label}</b> {s.value}</div>)}
+        {char.specs.filter(s => s.value.trim()).map(s => <div key={s.label}><b>{s.label}</b> {s.value}</div>)}
       </div>
       {/* 캐릭터의 지금 색 팔레트를 그대로 읽는다 (v2.0 사용자 발견).
           예전엔 멤버를 추가할 때 복사해 둔 member.palette 스냅샷을 보여 줘서, 캐릭터 쪽에서 색을
@@ -174,6 +173,16 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
         {member.keywords.map(k => <span key={k} className="pill">{k}</span>)}
       </div>
       {member.desc && <div className="rel-desc">{member.desc}</div>}
+      {(member.appearance?.trim() || member.features?.trim()) && (
+        <div className="rel-member-copy">
+          {member.appearance?.trim() && (
+            <section><b><i>01</i> 외관 서술</b><p>{member.appearance}</p></section>
+          )}
+          {member.features?.trim() && (
+            <section><b><i>02</i> 기타 특징</b><p>{member.features}</p></section>
+          )}
+        </div>
+      )}
       {/* 대표를 뺀 나머지 아트 — 없으면 줄 자체를 만들지 않는다 (빈 칸이 자리를 먹지 않게) */}
       {rest.length > 0 && (
         <div className="card-thumbs">
@@ -234,7 +243,6 @@ export default function RelDetailPage() {
   const [rooms] = useLocalList<RpRoom>('ohome.rp.v1', RP_SEED);
   const [tab, setTab] = useState<'tl' | 'qa'>('tl');
   const [auId, setAuId] = useState('base');
-  const [oneMode, setOneMode] = useState<boolean | null>(null);
   const [qaNo, setQaNo] = useState<number | null>(null);
   const [qaQuery, setQaQuery] = useState('');
   const [qaText, setQaText] = useState('');
@@ -295,6 +303,7 @@ export default function RelDetailPage() {
   const [tSays, setTSays] = useState<{ id: string; charId: string; text: string }[]>([]);
   const [tlSort, setTlSort] = useState(false); // 타임라인 정렬 모드 (드래그앤드롭)
   const [artIdx, setArtIdx] = useState(0);
+  const [miniLb, setMiniLb] = useState<number | null>(null);
   /* 중앙 일러 우클릭 → 상세에 보일 위치 조정 (v2.0 사용자 요청).
      리스트 썸네일 좌표만 잡을 수 있고 상세는 못 잡던 것 — 여러 장이면 보고 있는 장을 잡는다.
      표시 영역은 화면 높이에 따라 달라지므로 고정 비율이 아니라 **실제 상자 비율**로 연다. */
@@ -423,8 +432,6 @@ export default function RelDetailPage() {
   // 빈 자리에 「○○ 전신」 자리표시자를 세우는 대신 대표 일러스트만 보여 준다 (사용자 확정)
   const fullRefOf = (cid: string) =>
     (isBaseAu ? rel?.members.find(x => x.charId === cid)?.fullImgId : au?.fulls?.[cid]);
-  const hasFull = !!rel?.members.some(m => fullRefOf(m.charId));
-  const single = hasFull ? (oneMode ?? rel?.illustMode === 'one') : true;
 
   // 멤버 캐릭터 — AU 선택 시 그 캐릭터의 AU 프로필(이름·사진 등)로 합성해 표시 (v1.9)
   const auCharKey = rel && !isBaseAu && au ? `${rel.id}:${au.id}` : null;
@@ -864,77 +871,68 @@ export default function RelDetailPage() {
       </div>
 
       {isDuo ? (
-        <div className="rel-body" style={{ fontFamily: familyOf(rel.bodyFontId) }}>
-          {pairSlots[0]
-            ? <MiniProf member={pairSlots[0]} char={charOf(pairSlots[0].charId)} isAdmin={isAdmin}
-                auUnregistered={auUnregOf(pairSlots[0].charId)}
-                side="l" onMoveSide={() => moveSide(pairSlots[0]!.charId)}
-                onFaceCrop={ref => setFaceEdit({ charId: pairSlots[0]!.charId, ref, crop: pairSlots[0]!.faceCrop })}
-                onGo={() => router.push(charHref(pairSlots[0]!.charId))}
-                onRemove={() => removeMember(pairSlots[0]!.charId)} />
-            : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
-          <div className={`rel-center ${single ? 'one-mode' : ''}`}
-            style={{ background: 'rgba(255,255,255,.04)', border: '1px solid var(--line-dark)' }}>
-            {/* 전신 — 등록 이미지(AU별 우선) + 크기/앞뒤는 자관 수정의 미리보기에서 (v1.9) */}
-            {pairSlots.map((sl, i) => {
-              const cid = sl?.charId ?? '';
-              // 전신 위치·크기도 AU 값 우선 (v2.0) — sl이 이미 AU 값으로 갈아 끼운 멤버다
-              const m = sl ?? rel.members.find(x => x.charId === cid);
-              // AU는 자기 전신만 — base 전신을 물려받지 않음 (v1.9 사용자 확정)
-              const fullRef = isBaseAu ? m?.fullImgId : au?.fulls?.[cid];
-              if (!fullRef) return null;   // 등록 안 된 전신은 자리도 만들지 않는다
-              const front = (rel.fullFront ?? pairSlots[1]?.charId) === cid;
-              return (
-                <div key={i} className={`fb fb-${i === 0 ? 'l' : 'r'}`}
-                  style={{ background: 'transparent', zIndex: front ? 3 : 2 }}>
-                  <FullImg refId={fullRef} scale={m?.fullScale ?? 90} offX={m?.fullOffX ?? 0} offY={m?.fullOffY ?? 0}
-                    shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />
-                </div>
-              );
-            })}
-            <div className="single" ref={artBoxRef} style={{ cursor: auArts.length > 1 ? 'pointer' : undefined }}
-              onClick={() => { const n = auArts.length; if (n > 1) setArtIdx(i => (i + 1) % n); }}
+        <div className="rel-editorial" style={{ fontFamily: familyOf(rel.bodyFontId) }}>
+          <div className="rel-editorial-info rel-editorial-info-left">
+            {pairSlots[0]
+              ? <MiniProf member={pairSlots[0]} char={charOf(pairSlots[0].charId)} isAdmin={isAdmin}
+                  auUnregistered={auUnregOf(pairSlots[0].charId)} side="l"
+                  onMoveSide={() => moveSide(pairSlots[0]!.charId)}
+                  onFaceCrop={ref => setFaceEdit({ charId: pairSlots[0]!.charId, ref, crop: pairSlots[0]!.faceCrop })}
+                  onGo={() => router.push(charHref(pairSlots[0]!.charId))}
+                  onRemove={() => removeMember(pairSlots[0]!.charId)} />
+              : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
+          </div>
+          <div className="rel-editorial-full-wrap rel-editorial-full-wrap-left">
+            {pairSlots[0] && <PairFull
+              refId={fullRefOf(pairSlots[0].charId)} name={charOf(pairSlots[0].charId)?.name ?? 'A'} side="left"
+              onGo={() => router.push(charHref(pairSlots[0]!.charId))}
+              shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />}
+          </div>
+
+          <div className="rel-editorial-center">
+            <div className="rel-editorial-art" ref={artBoxRef}
               onContextMenu={e => {
                 if (!isAdmin || !curArt) return;
-                e.preventDefault();
-                setArtCtx({ x: e.clientX, y: e.clientY, ref: curArt });
+                e.preventDefault(); setArtCtx({ x: e.clientX, y: e.clientY, ref: curArt });
               }}>
-              {auArts.length > 0 ? (
-                <>
-                  {/* 잡아 둔 위치가 있으면 그대로 (v2.0) — 없으면 예전처럼 통째로 */}
-                  <CroppedBlobImg fileRef={auArts[Math.min(artIdx, auArts.length - 1)]} crop={rel.artCrops?.[curArt]} ph="" label="MAIN ILLUST" />
-                  {auArts.length > 1 && (
-                    <div style={{ position: 'absolute', left: 0, right: 0, bottom: 44, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
-                      {auArts.map((_, i) => (
-                        <i key={i} style={{ width: i === Math.min(artIdx, auArts.length - 1) ? 16 : 6, height: 6, borderRadius: 4, background: i === Math.min(artIdx, auArts.length - 1) ? '#fff' : 'rgba(255,255,255,.45)', transition: '.2s' }} />
-                      ))}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="ph" style={{ position: 'absolute', inset: 0 }}><span>MAIN ILLUST</span></div>
-              )}
+              <BlobImg fileRef={auArts[0]} ph="" alt={`${(!isBaseAu && au?.name?.trim()) || rel.name} 대표 일러스트`}
+                label="RELATION ILLUSTRATION" imgStyle={{ objectFit: 'contain' }} />
             </div>
-            {/* 스위치 색 — 자관별 지정(EDIT) 없으면 테마·포인트색 (v1.9).
-                전신이 하나도 없으면 고를 것이 없으므로 스위치 자체를 숨긴다 */}
-            {hasFull && (
-              <div className="illu-toggle seg" style={{
-                ['--illu-bg' as string]: auSt.illuBg,
-                ['--illu-on' as string]: auSt.illuOn,
-              } as React.CSSProperties}>
-                <button className={!single ? 'on' : ''} onClick={() => setOneMode(false)}>전신</button>
-                <button className={single ? 'on' : ''} onClick={() => setOneMode(true)}>일러스트</button>
-              </div>
+            {(rel.miniImages?.length ?? 0) > 0 && (
+              <section className="rel-mini-widget" aria-label="관계 공용 이미지">
+                <div className="rel-mini-widget-title">SHARED MOMENTS</div>
+                <div className="rel-mini-grid">
+                  {rel.miniImages!.map((item, i) => (
+                    <button type="button" key={item.id} aria-label={`관계 공용 이미지 ${i + 1} 크게 보기`}
+                      onClick={() => setMiniLb(i)}>
+                      <BlobImg fileRef={item.imgId} ph="" alt={`관계 공용 이미지 ${i + 1}`}
+                        imgStyle={{ objectFit: 'contain' }} />
+                    </button>
+                  ))}
+                </div>
+              </section>
             )}
           </div>
-          {pairSlots[1]
-            ? <MiniProf member={pairSlots[1]} char={charOf(pairSlots[1].charId)} isAdmin={isAdmin}
-                auUnregistered={auUnregOf(pairSlots[1].charId)}
-                side="r" onMoveSide={() => moveSide(pairSlots[1]!.charId)}
-                onFaceCrop={ref => setFaceEdit({ charId: pairSlots[1]!.charId, ref, crop: pairSlots[1]!.faceCrop })}
-                onGo={() => router.push(charHref(pairSlots[1]!.charId))}
-                onRemove={() => removeMember(pairSlots[1]!.charId)} />
-            : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
+
+          <div className="rel-editorial-full-wrap rel-editorial-full-wrap-right">
+            {pairSlots[1] && <PairFull
+              refId={fullRefOf(pairSlots[1].charId)} name={charOf(pairSlots[1].charId)?.name ?? 'B'} side="right"
+              onGo={() => router.push(charHref(pairSlots[1]!.charId))}
+              shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />}
+          </div>
+          <div className="rel-editorial-info rel-editorial-info-right">
+            {pairSlots[1]
+              ? <MiniProf member={pairSlots[1]} char={charOf(pairSlots[1].charId)} isAdmin={isAdmin}
+                  auUnregistered={auUnregOf(pairSlots[1].charId)} side="r"
+                  onMoveSide={() => moveSide(pairSlots[1]!.charId)}
+                  onFaceCrop={ref => setFaceEdit({ charId: pairSlots[1]!.charId, ref, crop: pairSlots[1]!.faceCrop })}
+                  onGo={() => router.push(charHref(pairSlots[1]!.charId))}
+                  onRemove={() => removeMember(pairSlots[1]!.charId)} />
+              : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
+          </div>
+          {miniLb !== null && rel.miniImages && (
+            <Lightbox srcs={rel.miniImages.map(x => x.imgId)} index={miniLb} onClose={() => setMiniLb(null)} />
+          )}
         </div>
       ) : (
         /* 다인 자관 — 프로토타입 multi-body: 좌 멤버 리스트(430px) + 우 그룹 일러 */

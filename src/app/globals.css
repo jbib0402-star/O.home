@@ -1037,7 +1037,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rel-card .nm .who{position:absolute;right:14px;bottom:12px;display:flex;gap:4px}
 .rel-card .nm .who i{width:14px;height:14px;border-radius:50%;font-style:normal;box-shadow:0 0 0 2px var(--panel-solid)} /* 카드 구석 표시라 작게 (v2.0 사용자 요청) */
 /* 자관 상세 — 헤더 이미지: 풀폭 블러 + 아래로 페이드아웃 (v1.5) */
-.page-rel-detail{position:relative;max-width:1280px}
+.page-rel-detail{position:relative;max-width:1600px;overflow-x:hidden}
 /* 배경 위 레이어링 — absolute로 배치되는 요소(AU·관리자 액션·모달)는 제외 */
 .page-rel-detail > *:not(.rel-backdrop):not(.modal-ov):not(.au-list):not(.rel-admin-actions){position:relative;z-index:1}
 .rel-backdrop{position:absolute;top:0;left:50%;transform:translateX(-50%);width:100vw;height:600px;z-index:0!important;overflow:hidden;pointer-events:none;
@@ -1057,6 +1057,45 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rel-hero h1{font-family:var(--serif);font-size:calc(64px*var(--fs,1));font-weight:600;letter-spacing:.3em;text-indent:.3em;text-shadow:0 4px 30px rgba(0,0,0,.6)}
 .rel-hero .catch{font-size:calc(11px*var(--fs,1));letter-spacing:.7em;text-indent:.7em;color:#b9bec7;margin-top:2px}
 .rel-body{display:grid;grid-template-columns:320px 1fr 320px;gap:16px;margin-top:26px;align-items:start}
+/* 2인 자관 상세 — 정보/전신/대표 일러를 대칭으로 잇는 관계 화보 */
+.rel-editorial{display:grid;grid-template-columns:minmax(210px,1fr) minmax(150px,.72fr) minmax(340px,1.55fr) minmax(150px,.72fr) minmax(210px,1fr);grid-template-areas:"infoL fullL center fullR infoR";gap:clamp(10px,1.2vw,20px);align-items:start;margin-top:28px;min-width:0}
+.rel-editorial-info-left{grid-area:infoL}.rel-editorial-info-right{grid-area:infoR}
+.rel-editorial-full-wrap-left{grid-area:fullL}.rel-editorial-full-wrap-right{grid-area:fullR}
+.rel-editorial-center{grid-area:center;display:grid;gap:14px;min-width:0}
+.rel-editorial .mini-prof{box-shadow:none;background:color-mix(in srgb,var(--panel) 90%,transparent);min-width:0}
+.rel-editorial .mini-prof .hd{display:grid;justify-items:center;text-align:center;padding:18px 14px 14px}
+.rel-editorial .mini-prof .hd .face{width:74px;height:auto;aspect-ratio:3/4;border-radius:12px}
+.rel-editorial .mini-prof .hd>div{width:100%}
+.rel-editorial .mini-prof .hd b{overflow-wrap:anywhere;line-height:1.25}
+.rel-editorial .mini-prof .hd small{white-space:normal;overflow-wrap:anywhere;line-height:1.5}
+.rel-editorial .mini-prof .specs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px 10px;padding:15px}
+.rel-editorial .mini-prof .specs div{display:block;min-width:0;overflow-wrap:anywhere;color:var(--ink);font-size:calc(12px*var(--fs,1));line-height:1.5}
+.rel-editorial .mini-prof .specs b{display:block;margin-bottom:3px;font-size:calc(8.5px*var(--fs,1));letter-spacing:.12em;text-transform:uppercase;color:var(--faint)}
+.rel-editorial .palette-row:empty,.rel-editorial .kw-row:empty{display:none}
+.rel-member-copy{padding:4px 15px 18px;border-top:1px solid var(--line)}
+.rel-member-copy section{padding-top:16px}
+.rel-member-copy section>b{display:flex;gap:8px;align-items:center;font-size:calc(10px*var(--fs,1));letter-spacing:.1em;color:var(--ink)}
+.rel-member-copy section>b i{font-style:normal;color:var(--accent);font-family:var(--serif)}
+.rel-member-copy p{margin-top:8px;font-size:calc(11.5px*var(--fs,1));line-height:1.75;color:var(--sub);white-space:pre-wrap;overflow-wrap:anywhere}
+.rel-editorial-full-wrap{height:min(68vh,650px);min-height:480px;align-self:start}
+.rel-editorial-full{width:100%;height:100%;display:block;overflow:hidden;border-radius:var(--radius);background:linear-gradient(180deg,color-mix(in srgb,var(--panel) 42%,transparent),transparent);border:1px solid color-mix(in srgb,var(--line) 72%,transparent);padding:8px;cursor:var(--cur-pointer,pointer);animation-duration:.82s;animation-timing-function:cubic-bezier(.16,1,.3,1);animation-fill-mode:both}
+.rel-editorial-full-left{animation-name:rel-full-in-left}.rel-editorial-full-right{animation-name:rel-full-in-right}
+@keyframes rel-full-in-left{from{opacity:0;transform:translateX(-80px)}to{opacity:1;transform:translateX(0)}}
+@keyframes rel-full-in-right{from{opacity:0;transform:translateX(80px)}to{opacity:1;transform:translateX(0)}}
+.rel-editorial-art{position:relative;width:100%;height:min(68vh,650px);min-height:480px;overflow:hidden;border-radius:var(--radius);border:1px solid var(--line);background:color-mix(in srgb,var(--panel) 66%,transparent);animation:rel-art-in .55s ease-out both}
+@keyframes rel-art-in{from{opacity:0}to{opacity:1}}
+.rel-mini-widget{padding:15px;border:1px solid var(--line);border-radius:var(--radius);background:color-mix(in srgb,var(--panel) 86%,transparent)}
+.rel-mini-widget-title{margin-bottom:10px;font-family:var(--serif);font-size:calc(9px*var(--fs,1));font-weight:700;letter-spacing:.2em;color:var(--faint)}
+.rel-mini-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.rel-mini-grid button{aspect-ratio:1;border:1px solid var(--line);border-radius:var(--radius-s);overflow:hidden;background:color-mix(in srgb,var(--panel-solid) 76%,transparent);cursor:zoom-in;padding:4px}
+.rel-mini-grid button:hover{border-color:var(--accent)}
+.rel-mini-editor,.rel-member-copy-editor{display:grid;gap:10px;padding:14px;border:1px solid var(--line);border-radius:var(--radius-s);background:color-mix(in srgb,var(--panel) 55%,transparent)}
+.rel-mini-editor-head{display:flex;justify-content:space-between;align-items:start;gap:12px}
+.rel-mini-edit-row{display:flex;align-items:center;gap:9px;width:100%}
+.rel-mini-edit-thumb{width:68px;aspect-ratio:1;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);padding:3px;cursor:zoom-in}
+.rel-mini-replace{cursor:var(--cur-pointer,pointer)}
+.rel-member-copy-card{display:grid;gap:7px;padding:12px;border-top:1px solid var(--line)}
+.rel-member-copy-card:first-of-type{margin-top:3px}
 /* 간단 프로필 카드 */
 .mini-prof{padding:0;overflow:hidden}
 .mini-prof .hd{display:flex;gap:12px;padding:15px 15px 11px;align-items:center;border-bottom:1px solid var(--line)}
@@ -1718,6 +1757,13 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .cf-row .k-step,.cf-row .pill{flex-shrink:0}
 .cf-stack{display:grid;gap:8px}
 
+@media (max-width:1180px){
+  .rel-editorial{grid-template-columns:minmax(0,1fr) minmax(0,1fr);grid-template-areas:"center center" "fullL fullR" "infoL infoR";max-width:920px;margin-left:auto;margin-right:auto}
+  .rel-editorial-art{height:auto;min-height:0;aspect-ratio:4/3}
+  .rel-editorial-full-wrap{height:560px;min-height:0}
+  .rel-editorial .mini-prof .specs{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+
 /* 중간 폭 (621~960px): 구조 유지, 폭만 축소 (v1.8) */
 @media (max-width:960px){
   body:not(.main-fixed) .main-grid{grid-template-columns:190px 1fr 220px}
@@ -1803,6 +1849,12 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .profile-name{letter-spacing:.07em}
   .spec{grid-template-columns:1fr;gap:18px;padding:20px 0}
   .profile-art-watermark{font-size:clamp(48px,18vw,78px)}
+  .rel-editorial{grid-template-columns:1fr;grid-template-areas:"center" "fullL" "infoL" "fullR" "infoR";gap:14px}
+  .rel-editorial-full-wrap{height:auto;aspect-ratio:3/4;max-height:none}
+  .rel-editorial-full{animation-name:rel-full-mobile}
+  @keyframes rel-full-mobile{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+  .rel-editorial .mini-prof .specs{grid-template-columns:1fr}
+  .rel-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   /* 자관 리스트 — 모바일 1열 2개 (v1.9 사용자 확정) */
   .rels-grid{grid-template-columns:1fr 1fr;gap:10px}
   /* TRPG 캐릭터 — 모바일 1열 2개 (중간뷰 3개는 1080px 규칙, v1.9 사용자 확정) */
@@ -1814,6 +1866,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .cal-layout > .panel.cal{display:none}
   /* TRPG 로그 — 필터 사이드는 리스트 아래로 (모바일은 티켓 스킨 대신 기본형, v1.9) */
   .trpg-layout{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .rel-editorial-full,.rel-editorial-art{animation:none!important}
 }
 /* 스케줄러 모바일 일정 나열 — PC에서는 숨김 (v1.9) */
 .cal-mlist{display:none}

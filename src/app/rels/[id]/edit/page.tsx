@@ -66,6 +66,8 @@ function RelEditInner() {
             members: (!auObj && (v.fullScales || v.fullOffsets || v.quoteColors || v.quotes))
               ? r.members.map(m => ({
                 ...m,
+                appearance: v.memberDetails?.[m.charId]?.appearance?.trim() || undefined,
+                features: v.memberDetails?.[m.charId]?.features?.trim() || undefined,
                 fullScale: v.fullScales?.[m.charId] ?? m.fullScale,
                 fullOffX: v.fullOffsets?.[m.charId]?.x ?? m.fullOffX,
                 fullOffY: v.fullOffsets?.[m.charId]?.y ?? m.fullOffY,
@@ -115,10 +117,14 @@ function RelEditInner() {
               }
               : {
                 catchphrase: v.catchphrase, arts: v.arts, thumbId: v.arts[0], thumbCrop: v.thumbCrop,
+                miniImages: v.miniImages ?? r.miniImages,
                 ...(v.fulls
                   ? {
                     members: r.members.map(m => ({
-                      ...m, fullImgId: v.fulls![m.charId],
+                      ...m,
+                      appearance: v.memberDetails?.[m.charId]?.appearance?.trim() || undefined,
+                      features: v.memberDetails?.[m.charId]?.features?.trim() || undefined,
+                      fullImgId: v.fulls![m.charId],
                       fullScale: v.fullScales?.[m.charId] ?? m.fullScale,
                       fullOffX: v.fullOffsets?.[m.charId]?.x ?? m.fullOffX,
                       fullOffY: v.fullOffsets?.[m.charId]?.y ?? m.fullOffY,

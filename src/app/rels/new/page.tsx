@@ -40,12 +40,17 @@ export default function RelNewPage() {
           // 팔레트는 캐릭터 쪽을 상세에서 그대로 읽는다 — 여기서 복사해 두면 나중에 캐릭터 색을
           // 바꿔도 자관이 따라오지 않는다 (v2.0 — 상세 페이지와 같은 규칙으로 통일)
           const members: RelMember[] = v.pickedCharIds.map(cid =>
-            ({ charId: cid, quote: '', keywords: [], desc: '', palette: [] }));
+            ({
+              charId: cid, quote: '', keywords: [], desc: '', palette: [],
+              appearance: v.memberDetails?.[cid]?.appearance?.trim() || undefined,
+              features: v.memberDetails?.[cid]?.features?.trim() || undefined,
+            }));
           const rel: Relation = {
             id: v.slug ?? newId(),   // 지정한 페이지 주소 (v1.9) — 비우면 자동
             name: v.name, catchphrase: v.catchphrase, kind: v.kind,
             fontId: v.fontId, bodyFontId: v.bodyFontId, visibility: v.visibility,
             arts: v.arts, thumbId: v.arts[0], thumbCrop: v.thumbCrop,
+            miniImages: v.miniImages,
             headerImgId: v.headerImgId, headerCrop: v.headerCrop,
             themeMode: v.themeMode, themeColor: v.themeColor, themeTone: v.themeTone,
             illuBg: v.illuBg, illuOn: v.illuOn,

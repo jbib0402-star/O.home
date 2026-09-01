@@ -979,8 +979,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .char-head-preview>span{font-size:calc(9px*var(--fs,1));letter-spacing:.12em;color:var(--faint)}
 .char-head-actions{display:flex;gap:7px;align-items:center;align-content:flex-start;flex-wrap:wrap;min-width:0;padding-top:3px}
 .char-head-actions .hint{flex-basis:100%}
-/* 프로필 상세 — 왼쪽에서 AU 버전과 내용 탭을 분리, 아트·정보는 기존 레이아웃 유지 */
-.profile-wrap{display:grid;grid-template-columns:64px 1fr 380px;gap:18px;align-items:start;min-height:560px}
+/* 프로필 상세 — 기능 구조는 유지하고, 세 영역을 하나의 화보처럼 연결한다. */
+.profile-wrap{display:grid;grid-template-columns:64px minmax(300px,1fr) minmax(360px,430px);gap:clamp(12px,1.5vw,22px);align-items:start;min-height:560px}
 .side-icons{display:flex;flex-direction:column;gap:9px;padding:12px 0;position:sticky;top:10px}
 .side-icon-group{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0}
 .side-icon-label{font-family:var(--serif);font-size:calc(8px*var(--fs,1));font-weight:700;letter-spacing:.16em;color:var(--faint);line-height:1}
@@ -988,25 +988,39 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 색 4종은 디자인 탭 「캐릭터 탭 리스트」 · 특수문자 아이콘 확대 16→19 (v1.9 사용자 요청) */
 .side-icons button{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.18s} /* 딩벳 글리프 아래 쏠림 보정 (v1.9 실측 — 사용자 미세조정 +1) */
 .side-icons button:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
-.side-icons button.on{background:var(--tab-on-bg,var(--panel-solid));color:var(--tab-on-fg,var(--ink));border-color:transparent;opacity:1}
+.side-icons button.on{background:var(--tab-on-bg,var(--panel-solid));color:var(--tab-on-fg,var(--ink));border-color:color-mix(in srgb,var(--accent) 62%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent);opacity:1}
 .side-icons .side-au-button{position:relative;overflow:hidden;padding:0}
 .side-au-face{position:absolute;inset:4px;border-radius:9px;overflow:hidden;display:grid;place-items:center;font-family:var(--serif);font-size:calc(13px*var(--fs,1));line-height:1}
 .side-au-face b{position:relative;z-index:1}
 .side-icons .side-au-add{border-style:dashed;font-size:calc(15px*var(--fs,1));padding:0}
 .profile-au-empty{grid-column:2/-1;text-align:center;padding:56px}
-.profile-center{border-radius:var(--radius);overflow:hidden;position:sticky;top:10px;height:calc(100vh - 150px);min-height:480px}
+.profile-center{border-radius:var(--radius);overflow:hidden;position:sticky;isolation:isolate;top:10px;height:calc(100vh - 150px);min-height:520px;background:linear-gradient(145deg,color-mix(in srgb,var(--panel) 42%,transparent),transparent 62%)}
+.profile-center::after{content:"";position:absolute;z-index:-1;width:min(72%,420px);aspect-ratio:1;border:1px solid color-mix(in srgb,var(--accent) 14%,transparent);border-radius:50%;left:50%;top:50%;transform:translate(-50%,-46%);pointer-events:none}
+.profile-art-watermark{position:absolute;z-index:-1;left:50%;top:50%;max-width:92%;transform:translate(-50%,-50%) rotate(-90deg);font-family:var(--serif);font-size:clamp(54px,8vw,118px);font-weight:600;letter-spacing:.14em;line-height:.9;color:color-mix(in srgb,var(--ink) 5%,transparent);white-space:nowrap;pointer-events:none;user-select:none}
 .profile-art-contain{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden}
 .profile-art-contain img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center center}
 /* 스티키 안정성 (v1.9): 끝까지 스크롤했을 때 아트 하단 == 정보 패널 하단이 되도록
    하단 여백을 계산값으로 고정 — viewH(100vh-58) - top(10) - artH(100vh-150) = 82px */
 .page-char-detail{padding-bottom:82px}
-.profile-info{padding:24px;overflow:auto}
+.profile-info{padding:clamp(24px,3vw,40px);overflow:visible;background:color-mix(in srgb,var(--panel) 90%,transparent);box-shadow:none}
+.profile-info-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
+.profile-kicker,.profile-section-label{font-size:calc(9px*var(--fs,1));font-weight:700;letter-spacing:.22em;color:var(--faint);text-transform:uppercase}
+.profile-info-actions{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+.profile-info-actions .btn{padding:7px 11px;font-size:calc(9.5px*var(--fs,1))}
+.profile-name{max-width:100%;font-size:clamp(38px,max(46px,var(--character-name-size,38px)),64px);letter-spacing:.1em;line-height:1.08;overflow-wrap:anywhere;text-wrap:balance}
 .profile-info h3{font-family:var(--serif);font-size:calc(19px*var(--fs,1));letter-spacing:.14em;margin-bottom:4px}
-.profile-info .sub{font-size:calc(11px*var(--fs,1));color:var(--faint);letter-spacing:.1em;margin-top:7px;margin-bottom:16px}
-.spec{display:grid;grid-template-columns:76px 1fr;gap:7px 10px;font-size:calc(12.5px*var(--fs,1));margin-bottom:18px}
-.spec dt{color:var(--faint);letter-spacing:.06em}
-.spec dd{color:var(--ink)}
-.prose{font-size:calc(14px*var(--fs,1));line-height:1.85;color:#3a3f47}
+.profile-info .sub{font-size:calc(11px*var(--fs,1));color:var(--faint);letter-spacing:.1em;margin-top:9px;margin-bottom:0;line-height:1.6}
+.profile-palette{display:flex;align-items:center;gap:7px;margin-top:16px}
+.profile-palette .sw-static{width:15px;height:15px}
+.spec{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px 26px;margin:26px 0 0;padding:24px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.spec:empty{display:none}
+.spec-item{min-width:0}
+.spec dt{font-size:calc(9px*var(--fs,1));font-weight:600;color:var(--faint);letter-spacing:.14em;text-transform:uppercase;margin-bottom:7px}
+.spec dd{font-size:calc(14px*var(--fs,1));line-height:1.55;color:var(--ink);overflow-wrap:anywhere}
+.profile-copy{padding-top:28px}
+.profile-section-label{margin-bottom:14px}
+.profile-tab-copy{padding-top:22px;border-top:1px solid var(--line)}
+.prose{max-width:62ch;font-size:calc(14px*var(--fs,1));line-height:1.9;color:var(--sub)}
 .prose b{display:block;margin-bottom:4px}
 .tabnote{margin-top:16px;padding:12px;border:1px dashed var(--line);border-radius:var(--radius-s);font-size:calc(11px*var(--fs,1));color:var(--faint)}
 
@@ -1721,6 +1735,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .profile-wrap{grid-template-columns:1fr;min-height:0;height:auto;align-items:start}
   .profile-center{order:1;position:relative;top:auto;height:auto;min-height:0;aspect-ratio:3/4;width:100%;max-width:560px;margin:0 auto}
   .profile-info{order:2;max-width:560px;margin:0 auto;width:100%}
+  .profile-name{font-size:clamp(34px,10vw,var(--character-name-size,48px))}
   .side-icons{order:0;position:static;width:100%;padding:0;gap:7px;overflow:hidden}
   .side-icon-group{width:100%;flex-direction:row;justify-content:flex-start;overflow-x:auto;padding:2px;scrollbar-width:thin}
   .side-icon-group button{flex:0 0 46px}
@@ -1782,6 +1797,12 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .char-head-actions{justify-content:center;width:100%}
   .char-head-actions .hint{text-align:center}
   .profile-au-empty{padding:36px 20px}
+  .profile-info{padding:24px 20px}
+  .profile-info-head{flex-direction:column;gap:12px}
+  .profile-info-actions{width:100%;justify-content:flex-start}
+  .profile-name{letter-spacing:.07em}
+  .spec{grid-template-columns:1fr;gap:18px;padding:20px 0}
+  .profile-art-watermark{font-size:clamp(48px,18vw,78px)}
   /* 자관 리스트 — 모바일 1열 2개 (v1.9 사용자 확정) */
   .rels-grid{grid-template-columns:1fr 1fr;gap:10px}
   /* TRPG 캐릭터 — 모바일 1열 2개 (중간뷰 3개는 1080px 규칙, v1.9 사용자 확정) */

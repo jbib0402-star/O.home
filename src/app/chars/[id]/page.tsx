@@ -224,14 +224,6 @@ function CharDetailInner() {
         {/* 캐릭터별로 별도 저장 — 키에 캐릭터 id 포함 */}
         <EditableDesc k={`char-detail-desc:${ch.id}`} def="좌측 아이콘 탭 → 우측 정보 전환" />
         <div className="head-actions">
-          {/* 관리자 또는 「편집까지」 권한 회원 (3차 회원-캐릭터 연결, v1.9)
-              — AU 선택 상태의 EDIT은 그 AU 전용 프로필 편집으로 진입 */}
-          {canEdit && (
-            <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>
-          )}
-          {canEdit && auKey && isCharacterAuKey(auKey) && (
-            <button className="btn btn-ghost" onClick={() => setAuDelAsk(auKey)}>AU DELETE</button>
-          )}
           {isAdmin && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
         </div>
 
@@ -301,9 +293,10 @@ function CharDetailInner() {
               <div className="side-icon-divider" aria-hidden="true" />
               <div className="side-icon-group">
                 <span className="side-icon-label">INFO</span>
-                <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" onClick={() => pickTab('basic')}>☰</button>
+                <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" aria-label="기본 정보" onClick={() => pickTab('basic')}>☰</button>
                 {eff.tabs.map(t => (
-                  <button key={t.id} className={tab === t.id ? 'on' : ''} data-tip={t.title} onClick={() => pickTab(t.id)}>{t.icon}</button>
+                  <button key={t.id} className={tab === t.id ? 'on' : ''} data-tip={t.title || '추가 프로필'}
+                    aria-label={t.title || '추가 프로필'} onClick={() => pickTab(t.id)}>{t.icon}</button>
                 ))}
               </div>
             </>
@@ -343,6 +336,7 @@ function CharDetailInner() {
                 e.preventDefault();
                 setArtCtx({ x: e.clientX, y: e.clientY, ref: arts[0] });
               }}>
+              <span className="profile-art-watermark" aria-hidden="true">{eff.name}</span>
               {/* 기본은 전체 이미지가 보이는 자동 contain. 대표 전신에 사용자가 명시적으로 저장한
                   기존 artCrop이 있을 때만 하위 호환을 위해 종전 위치 조정 결과를 재현한다. */}
               {cur === 0 && eff.artCrop ? (
@@ -368,50 +362,63 @@ function CharDetailInner() {
 
         {/* 우측 정보 패널 — 최상단 캐릭터 이름 크게 (v1.6) · AU면 그 AU의 이름·폰트 */}
         <div className="panel profile-info" ref={infoRef} style={{ fontFamily: familyOf(eff.bodyFontId) }}>
+          <div className="profile-info-head">
+            <div className="profile-kicker">
+              {tab === 'basic'
+                ? (auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'ORIGINAL')
+                : (curTab?.title?.trim() || 'PROFILE')}
+            </div>
+            <div className="profile-info-actions">
+              {/* 권한과 AU 판정은 기존 조건 그대로 유지한다. */}
+              {canEdit && (
+                <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>
+              )}
+              {canEdit && auKey && isCharacterAuKey(auKey) && (
+                <button className="btn btn-ghost" onClick={() => setAuDelAsk(auKey)}>AU DELETE</button>
+              )}
+            </div>
+          </div>
           {/* 크기는 캐릭터마다 직접 정한다 (등록·수정의 「이름 크기」) — 자동으로 줄이면
               이름 길이에 따라 어중간해져서, 정한 크기를 그대로 쓴다 (v2.0 사용자 확정) */}
-          <div style={{
-            fontFamily: familyOf(eff.fontId) ?? 'var(--serif)', fontSize: eff.nameSize ?? 38,
-            fontWeight: 600, letterSpacing: '.2em', lineHeight: 1.1,
-          }}>{eff.name}</div>
-          <div className="sub" style={{ marginBottom: 14 }}>{eff.sub}</div>
+          <div className="profile-name" style={{
+            fontFamily: familyOf(eff.fontId) ?? 'var(--serif)',
+            '--character-name-size': `${eff.nameSize ?? 38}px`,
+            fontWeight: 500,
+          } as React.CSSProperties}>{eff.name}</div>
+          {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
+
+          {eff.colors.length > 0 && (
+            <div className="profile-palette" aria-label="테마 컬러">
+              {eff.colors.map(c => {
+                const tip = eff.colorTipMode === 'label' ? (c.label || c.hex.toUpperCase())
+                  : eff.colorTipMode === 'both' ? (c.label ? `${c.label} · ${c.hex.toUpperCase()}` : c.hex.toUpperCase())
+                  : c.hex.toUpperCase();
+                return <span key={c.hex + c.label} className="sw-static" data-hex={tip}
+                  title={tip} style={{ background: c.hex, boxShadow: chipBorder(eff.colorBd) }} />;
+              })}
+            </div>
+          )}
 
           {tab === 'basic' ? (
             <>
               {/* 기본 정보 탭은 제목을 두지 않는다 — 처음 보이는 화면이라 안내가 필요 없다
                   (다른 탭은 무엇을 보는 중인지 알아야 하므로 제목을 그대로 둔다) */}
               <dl className="spec">
-                {eff.specs.map(s => (
-                  <React.Fragment key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></React.Fragment>
+                {eff.specs.filter(s => s.value.trim()).map(s => (
+                  <div className="spec-item" key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></div>
                 ))}
-                {eff.colors.length > 0 && (
-                  <>
-                    <dt>테마컬러</dt>
-                    <dd>
-                      <span style={{ display: 'inline-flex', gap: 7, alignItems: 'center' }}>
-                        {/* 색 점 나열 — hex는 호버 툴팁만 (v1.8) */}
-                        {eff.colors.map(c => {
-                          // 툴팁 표기: hex / 이름+hex / 이름만 (등록 시 선택)
-                          const tip = eff.colorTipMode === 'label' ? (c.label || c.hex.toUpperCase())
-                            : eff.colorTipMode === 'both' ? (c.label ? `${c.label} · ${c.hex.toUpperCase()}` : c.hex.toUpperCase())
-                            : c.hex.toUpperCase();
-                          return (
-                            <span key={c.hex + c.label} className="sw-static" data-hex={tip}
-                              style={{ background: c.hex, boxShadow: chipBorder(eff.colorBd) }} />
-                          );
-                        })}
-                      </span>
-                    </dd>
-                  </>
-                )}
               </dl>
-              <div className="prose" dangerouslySetInnerHTML={{ __html: basicHtml }} />
+              {basicHtml && (
+                <section className="profile-copy">
+                  <div className="profile-section-label">INTRODUCTION</div>
+                  <div className="prose" dangerouslySetInnerHTML={{ __html: basicHtml }} />
+                </section>
+              )}
             </>
           ) : (
             <>
-              <h3>{curTab?.title}</h3>
               {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}
-              <div className="prose" dangerouslySetInnerHTML={{ __html: tabHtml }} />
+              {tabHtml && <div className="prose profile-tab-copy" dangerouslySetInnerHTML={{ __html: tabHtml }} />}
             </>
           )}
         </div>

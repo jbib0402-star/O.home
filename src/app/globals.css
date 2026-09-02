@@ -1077,9 +1077,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rel-member-copy section>b i{font-style:normal;color:var(--accent);font-family:var(--serif)}
 .rel-member-copy p{margin-top:8px;font-size:calc(11.5px*var(--fs,1));line-height:1.75;color:var(--sub);white-space:pre-wrap;overflow-wrap:anywhere}
 .rel-editorial-stage{position:relative;isolation:isolate;width:100%;aspect-ratio:4/3;overflow:visible}
-.rel-editorial-full{position:absolute;bottom:0;width:43%;height:100%;display:block;overflow:visible;border:0;background:transparent;padding:0;pointer-events:none;animation-duration:.82s;animation-timing-function:cubic-bezier(.16,1,.3,1);animation-fill-mode:both}
+.rel-editorial-full{position:absolute;bottom:0;width:50%;height:100%;display:block;overflow:visible;border:0;background:transparent;padding:0;pointer-events:none;animation-duration:.82s;animation-timing-function:cubic-bezier(.16,1,.3,1);animation-fill-mode:both}
 .rel-editorial-full img{position:absolute;transform:translateX(-50%);width:auto;max-width:none;max-height:none;object-fit:contain;object-position:center bottom;pointer-events:auto;cursor:var(--cur-pointer,pointer);user-select:none;-webkit-user-drag:none}
-.rel-editorial-full-left{left:-3%}.rel-editorial-full-right{right:-3%}
+.rel-editorial-full-left{left:0}.rel-editorial-full-right{right:0}
 .rel-editorial-full-left{animation-name:rel-full-in-left}.rel-editorial-full-right{animation-name:rel-full-in-right}
 @keyframes rel-full-in-left{from{opacity:0;transform:translateX(-80px)}to{opacity:1;transform:translateX(0)}}
 @keyframes rel-full-in-right{from{opacity:0;transform:translateX(80px)}to{opacity:1;transform:translateX(0)}}
@@ -1088,6 +1088,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .rel-editorial-stage-preview{height:auto;min-height:0;max-width:720px;aspect-ratio:4/3;margin:0 auto;border-radius:14px;background:linear-gradient(180deg,#262b33,#181b20);border:1px solid var(--line)}
 .rel-editorial-stage-preview .rel-editorial-art{inset:0 12%;border-radius:12px;box-shadow:none}
 .rel-editorial-stage-preview .rel-editorial-full{animation:none}
+.rel-full-size-tools{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.rel-full-size-tools>div{display:flex;align-items:center;gap:8px;min-width:0;padding:8px 10px;border:1px solid var(--line);border-radius:var(--radius-s);background:color-mix(in srgb,var(--panel) 55%,transparent)}
+.rel-full-size-tools b{min-width:0;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(11px*var(--fs,1));color:var(--sub)}
+.rel-full-size-tools .btn{padding:5px 8px;font-size:calc(10px*var(--fs,1))}
 .rel-mini-widget{padding:15px;border:1px solid var(--line);border-radius:var(--radius);background:color-mix(in srgb,var(--panel) 86%,transparent)}
 .rel-mini-widget-title{margin-bottom:10px;font-family:var(--serif);font-size:calc(9px*var(--fs,1));font-weight:700;letter-spacing:.2em;color:var(--faint)}
 .rel-mini-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
@@ -1854,12 +1858,15 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .profile-art-watermark{font-size:clamp(48px,18vw,78px)}
   .rel-editorial{grid-template-columns:1fr;grid-template-areas:"center" "infoL" "infoR";gap:14px}
   .rel-editorial-stage{aspect-ratio:4/3}
-  .rel-editorial-art{inset:0 8%}
-  .rel-editorial-full{width:46%}
+  .rel-editorial-art{inset:0 7%}
+  .rel-editorial-stage-preview .rel-editorial-art{inset:0 7%}
+  .rel-editorial-full{width:50%}
+  .rel-editorial-full img{transform:translateX(-50%) scale(.88);transform-origin:center bottom}
   .rel-editorial-full{animation-name:rel-full-mobile}
   @keyframes rel-full-mobile{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
   .rel-editorial .mini-prof .specs{grid-template-columns:1fr}
   .rel-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .rel-full-size-tools{grid-template-columns:1fr}
   /* 자관 리스트 — 모바일 1열 2개 (v1.9 사용자 확정) */
   .rels-grid{grid-template-columns:1fr 1fr;gap:10px}
   /* TRPG 캐릭터 — 모바일 1열 2개 (중간뷰 3개는 1080px 규칙, v1.9 사용자 확정) */

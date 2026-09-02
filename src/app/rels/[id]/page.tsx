@@ -12,6 +12,7 @@ import {
   Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, findChar, Visibility, CharGrant,
   auMember, auStyle, fullShadow, hasRelGrant,
   RelAu, RelCpTag, charWithAu, charGrant, charThumbRef,
+  REL_FULL_SCALE_DEFAULT, relationFullScale,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
 } from '@/lib/charStore';
 import { RelQuestionSet, RELQ_SEED, RELQ_KEY, CP_LABEL } from '@/lib/relqStore';
@@ -32,18 +33,19 @@ import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 
 /** 관계 일러 위에 겹치는 투명 전신 — 상세와 편집 미리보기가 같은 좌표계를 쓴다. */
-function PairFull({ refId, name, side, onGo, shadow, scale = 90, offX = 0, offY = 0, front }: {
+function PairFull({ refId, name, side, onGo, shadow, scale = REL_FULL_SCALE_DEFAULT, offX = 0, offY = 0, front }: {
   refId?: string; name: string; side: 'left' | 'right'; onGo: () => void; shadow?: string;
   scale?: number; offX?: number; offY?: number; front?: boolean;
 }) {
   const src = useBlobUrl(refId);
   if (!src) return null;
+  const displayScale = relationFullScale(scale);
   return (
     <button type="button" className={`rel-editorial-full rel-editorial-full-${side}`}
       style={{ zIndex: front ? 4 : 3 }} aria-label={`${name} 캐릭터 상세 보기`} onClick={onGo}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={src} alt={`${name} 전신`} draggable={false} style={{
-        bottom: `${offY}%`, left: `calc(50% + ${offX}%)`, height: `${scale}%`, filter: shadow,
+        bottom: `${offY}%`, left: `calc(50% + ${offX}%)`, height: `${displayScale}%`, filter: shadow,
       }} />
     </button>
   );

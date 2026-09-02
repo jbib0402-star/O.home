@@ -11,7 +11,8 @@ import { useLocalList, newId } from '@/lib/postStore';
 import {
   Relation, REL_SEED, Character, CHAR_SEED, RelMember, QaEntry, QaAnswer, TlItem, findChar, Visibility, CharGrant,
   auMember, auStyle, fullShadow, hasRelGrant,
-  RelAu, RelCpTag, charWithAu, charGrant,
+  RelAu, RelCpTag, charWithAu, charGrant, charThumbRef,
+  REL_FULL_SCALE_DEFAULT, relationFullScale,
   QaAnswerRow, QA_KEY, QA_SEED, MergedAnswer, answersFor,
 } from '@/lib/charStore';
 import { RelQuestionSet, RELQ_SEED, RELQ_KEY, CP_LABEL } from '@/lib/relqStore';
@@ -31,15 +32,21 @@ import { Lightbox } from '@/components/ui/Lightbox';
 import { useToast } from '@/components/ui/Toast';
 import { PageTitle } from '@/components/ui/PageText';
 
-/** 대칭 화보용 전신 — 좌우 동일한 프레임 안에 원본 전체를 맞춘다. */
-function PairFull({ refId, name, side, onGo, shadow }: {
+/** 관계 일러 위에 겹치는 투명 전신 — 상세와 편집 미리보기가 같은 좌표계를 쓴다. */
+function PairFull({ refId, name, side, onGo, shadow, scale = REL_FULL_SCALE_DEFAULT, offX = 0, offY = 0, front }: {
   refId?: string; name: string; side: 'left' | 'right'; onGo: () => void; shadow?: string;
+  scale?: number; offX?: number; offY?: number; front?: boolean;
 }) {
+  const src = useBlobUrl(refId);
+  if (!src) return null;
+  const displayScale = relationFullScale(scale);
   return (
     <button type="button" className={`rel-editorial-full rel-editorial-full-${side}`}
-      aria-label={`${name} 캐릭터 상세 보기`} onClick={onGo}>
-      <BlobImg fileRef={refId} ph="" alt={`${name} 전신`} label={`${name} 전신`}
-        imgStyle={{ objectFit: 'contain', filter: shadow }} />
+      style={{ zIndex: front ? 4 : 3 }} aria-label={`${name} 캐릭터 상세 보기`} onClick={onGo}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={src} alt={`${name} 전신`} draggable={false} style={{
+        bottom: `${offY}%`, left: `calc(50% + ${offX}%)`, height: `${displayScale}%`, filter: shadow,
+      }} />
     </button>
   );
 }
@@ -90,9 +97,10 @@ function RelArtCropModal({ fileRef, ratio, crop, onClose, onApply }: {
 
 const noteOf = (m: RelMember) => (m.linkedNote === '상대 캐릭터' ? '' : m.linkedNote ?? '');
 
-function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side, onMoveSide, onFaceCrop }: {
+function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, independentThumb, side, onMoveSide, onFaceCrop }: {
   member: RelMember; char?: Character; isAdmin: boolean; onGo: () => void; onRemove: () => void;
   auUnregistered?: boolean;   // AU 선택 중인데 이 캐릭터의 AU 프로필이 미등록 (v1.9)
+  independentThumb?: boolean; // AU 두상은 ORIGINAL/전신으로 fallback하지 않는다
   side?: 'l' | 'r';           // 페어에서 지금 어느 자리인지 (좌우 옮기기 메뉴용, v2.0)
   onMoveSide?: () => void;
   onFaceCrop?: (ref: string) => void;   // 얼굴칸(1:1) 크롭 다시 잡기 (v2.0)
@@ -114,10 +122,9 @@ function MiniProf({ member, char, isAdmin, onGo, onRemove, auUnregistered, side,
       window.removeEventListener('keydown', key);
     };
   }, [ctx]);
-  // 대표 이미지 = 프로필 사진 · 나머지 아트 = 아래 썸네일 줄 (없으면 줄 자체를 만들지 않는다)
+  // ORIGINAL 구 데이터는 기존 대표 아트를 두상으로 보여 주되, AU는 독립 두상만 사용한다.
   const arts = char?.arts ?? [];
-  // 전신을 두상으로 임의 크롭하지 않는다. 독립 두상이 없으면 플레이스홀더를 사용한다.
-  const rep = char?.thumbId;
+  const rep = char ? (independentThumb ? char.thumbId : charThumbRef(char)) : undefined;
   const rest = arts.filter(a => a !== rep);
   const gallery = (rep ? [rep, ...rest] : rest).filter(Boolean);
   if (!char) return null;
@@ -384,6 +391,8 @@ export default function RelDetailPage() {
   const auTimeline = (isBaseAu ? rel?.timeline : au?.timeline) ?? [];
   const auQuestions = (isBaseAu ? rel?.questions : au?.questions) ?? [];
   const curArt = auArts[Math.min(artIdx, Math.max(0, auArts.length - 1))];
+  // 페어 화보의 중앙 일러스트는 AU별 첫 장 한 장만 사용한다.
+  const heroArt = auArts[0];
   /** 이 장의 위치만 저장 — 참조를 키로 두어 다른 장·AU 것은 그대로 (v2.0) */
   const saveArtCrop = (ref: string, c: CropValue | undefined) => updateRel({
     artCrops: (() => {
@@ -725,6 +734,7 @@ export default function RelDetailPage() {
         asAu(rel.members.find(m => m.charId === rel.pairRight) ?? null)]
       : [asAu(rel.members[0] ?? null), asAu(rel.members[1] ?? null)])
     : [];
+  const frontFullId = rel.fullFront ?? pairSlots[1]?.charId;
 
   /** 이 멤버를 반대쪽 자리로 (좌 ↔ 우) */
   const moveSide = (cid: string) => {
@@ -875,28 +885,39 @@ export default function RelDetailPage() {
           <div className="rel-editorial-info rel-editorial-info-left">
             {pairSlots[0]
               ? <MiniProf member={pairSlots[0]} char={charOf(pairSlots[0].charId)} isAdmin={isAdmin}
-                  auUnregistered={auUnregOf(pairSlots[0].charId)} side="l"
+                  auUnregistered={auUnregOf(pairSlots[0].charId)} independentThumb={!isBaseAu} side="l"
                   onMoveSide={() => moveSide(pairSlots[0]!.charId)}
                   onFaceCrop={ref => setFaceEdit({ charId: pairSlots[0]!.charId, ref, crop: pairSlots[0]!.faceCrop })}
                   onGo={() => router.push(charHref(pairSlots[0]!.charId))}
                   onRemove={() => removeMember(pairSlots[0]!.charId)} />
               : <EmptyCard isAdmin={isAdmin} onAdd={() => setMemberOpen(true)} />}
           </div>
-          <div className="rel-editorial-full-wrap rel-editorial-full-wrap-left">
-            {pairSlots[0] && <PairFull
-              refId={fullRefOf(pairSlots[0].charId)} name={charOf(pairSlots[0].charId)?.name ?? 'A'} side="left"
-              onGo={() => router.push(charHref(pairSlots[0]!.charId))}
-              shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />}
-          </div>
 
           <div className="rel-editorial-center">
-            <div className="rel-editorial-art" ref={artBoxRef}
-              onContextMenu={e => {
-                if (!isAdmin || !curArt) return;
-                e.preventDefault(); setArtCtx({ x: e.clientX, y: e.clientY, ref: curArt });
-              }}>
-              <BlobImg fileRef={auArts[0]} ph="" alt={`${(!isBaseAu && au?.name?.trim()) || rel.name} 대표 일러스트`}
-                label="RELATION ILLUSTRATION" imgStyle={{ objectFit: 'contain' }} />
+            <div className="rel-editorial-stage">
+              <div className="rel-editorial-art" ref={artBoxRef}
+                onContextMenu={e => {
+                  if (!isAdmin || !heroArt) return;
+                  e.preventDefault(); setArtCtx({ x: e.clientX, y: e.clientY, ref: heroArt });
+                }}>
+                {heroArt && rel.artCrops?.[heroArt]
+                  ? <CroppedBlobImg fileRef={heroArt} crop={rel.artCrops[heroArt]} ph=""
+                      label="RELATION ILLUSTRATION" />
+                  : <BlobImg fileRef={heroArt} ph="" alt={`${(!isBaseAu && au?.name?.trim()) || rel.name} 대표 일러스트`}
+                      label="RELATION ILLUSTRATION" imgStyle={{ objectFit: 'contain' }} />}
+              </div>
+              {pairSlots[0] && <PairFull
+                refId={fullRefOf(pairSlots[0].charId)} name={charOf(pairSlots[0].charId)?.name ?? 'A'} side="left"
+                scale={pairSlots[0].fullScale} offX={pairSlots[0].fullOffX} offY={pairSlots[0].fullOffY}
+                front={frontFullId === pairSlots[0].charId}
+                onGo={() => router.push(charHref(pairSlots[0]!.charId))}
+                shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />}
+              {pairSlots[1] && <PairFull
+                refId={fullRefOf(pairSlots[1].charId)} name={charOf(pairSlots[1].charId)?.name ?? 'B'} side="right"
+                scale={pairSlots[1].fullScale} offX={pairSlots[1].fullOffX} offY={pairSlots[1].fullOffY}
+                front={frontFullId === pairSlots[1].charId}
+                onGo={() => router.push(charHref(pairSlots[1]!.charId))}
+                shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />}
             </div>
             {(rel.miniImages?.length ?? 0) > 0 && (
               <section className="rel-mini-widget" aria-label="관계 공용 이미지">
@@ -914,16 +935,10 @@ export default function RelDetailPage() {
             )}
           </div>
 
-          <div className="rel-editorial-full-wrap rel-editorial-full-wrap-right">
-            {pairSlots[1] && <PairFull
-              refId={fullRefOf(pairSlots[1].charId)} name={charOf(pairSlots[1].charId)?.name ?? 'B'} side="right"
-              onGo={() => router.push(charHref(pairSlots[1]!.charId))}
-              shadow={fullShadow(auSt.nameShadowColor, auSt.nameShadow)} />}
-          </div>
           <div className="rel-editorial-info rel-editorial-info-right">
             {pairSlots[1]
               ? <MiniProf member={pairSlots[1]} char={charOf(pairSlots[1].charId)} isAdmin={isAdmin}
-                  auUnregistered={auUnregOf(pairSlots[1].charId)} side="r"
+                  auUnregistered={auUnregOf(pairSlots[1].charId)} independentThumb={!isBaseAu} side="r"
                   onMoveSide={() => moveSide(pairSlots[1]!.charId)}
                   onFaceCrop={ref => setFaceEdit({ charId: pairSlots[1]!.charId, ref, crop: pairSlots[1]!.faceCrop })}
                   onGo={() => router.push(charHref(pairSlots[1]!.charId))}
@@ -1403,7 +1418,7 @@ export default function RelDetailPage() {
 {/* 중앙 일러 우클릭 — 상세에 보일 위치 (v2.0 사용자 요청). 여러 장이면 보고 있는 장 */}
       {artCtx && createPortal(
         <div className="ctx-menu on" style={{ left: artCtx.x, top: artCtx.y }} onClick={e => e.stopPropagation()}>
-          <div className="ctx-ttl">중앙 일러{auArts.length > 1 ? ` ${Math.min(artIdx, auArts.length - 1) + 1}/${auArts.length}` : ''}</div>
+          <div className="ctx-ttl">중앙 대표 일러스트</div>
           <button onClick={() => { setArtCropOpen({ ref: artCtx.ref, ratio: artBoxRatio() }); setArtCtx(null); }}>
             이미지 위치 조정
           </button>

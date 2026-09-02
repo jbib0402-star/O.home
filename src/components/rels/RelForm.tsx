@@ -3,7 +3,10 @@
 // 아트 다중 등록(첫 장 = 대표 · 리스트 썸네일 4:3 크롭) · 등록 시 내 캐릭터 연동
 import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Character, Relation, Visibility, RelCpTag, RelMember, RelationMiniImage, auMember, auStyle, fullShadow } from '@/lib/charStore';
+import {
+  Character, Relation, Visibility, RelCpTag, RelMember, RelationMiniImage, auMember, auStyle, fullShadow,
+  REL_FULL_SCALE_DEFAULT, REL_FULL_SCALE_MAX, REL_FULL_SCALE_MIN, relationFullScale,
+} from '@/lib/charStore';
 import { ColorField } from '@/components/ui/ColorField';
 import { isValidSlug, slugify } from '@/lib/link';
 import { CP_LABEL } from '@/lib/relqStore';
@@ -96,7 +99,7 @@ function FullPrevImg({ draft, scale, offX, offY, name, shadow, onScale, onOffset
     const onWheel = (e: WheelEvent) => {
       e.preventDefault();
       const { scale: s, onScale: fn } = wheelState.current;
-      fn(Math.max(40, Math.min(160, Math.round(s - Math.sign(e.deltaY) * 4))));
+      fn(Math.max(REL_FULL_SCALE_MIN, Math.min(REL_FULL_SCALE_MAX, Math.round(s - Math.sign(e.deltaY) * 5))));
     };
     el.addEventListener('wheel', onWheel, { passive: false });
     return () => el.removeEventListener('wheel', onWheel);
@@ -108,7 +111,7 @@ function FullPrevImg({ draft, scale, offX, offY, name, shadow, onScale, onOffset
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img ref={imgRef} src={src} alt={name}
         style={{
-          position: 'absolute', bottom: `${offY}%`, left: `calc(50% + ${offX}%)`, transform: 'translateX(-50%)',
+          position: 'absolute', bottom: `${offY}%`, left: `calc(50% + ${offX}%)`,
           height: `${scale}%`, maxWidth: 'none', cursor: 'var(--cur-grab,grab)',
           userSelect: 'none', touchAction: 'none',
           filter: shadow,
@@ -261,7 +264,7 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
   // AU에서 고친 게 다른 AU에도 그대로 나타났다). 정해 둔 게 없으면 자관 기본값.
   const mOf = (m: RelMember) => (auObj ? auMember(m, auObj) : m);
   const [fullScales, setFullScales] = useState<Record<string, number>>(
-    () => Object.fromEntries(pairMembers.map(m => [m.charId, mOf(m).fullScale ?? 90])));
+    () => Object.fromEntries(pairMembers.map(m => [m.charId, relationFullScale(mOf(m).fullScale)])));
   // 전신 위치 오프셋 % (v1.9 — 드래그로 이동, 상세와 동일 좌표계)
   const [fullOffsets, setFullOffsets] = useState<Record<string, { x: number; y: number }>>(
     () => Object.fromEntries(pairMembers.map(m => [m.charId, { x: mOf(m).fullOffX ?? 0, y: mOf(m).fullOffY ?? 0 }])));
@@ -512,12 +515,12 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
           </section>
         )}
 
-        {/* 전신 이미지 (v1.9) — 페어 좌/우 캐릭터, 미리보기에서 드래그=크기 · 클릭=앞으로 */}
+        {/* 전신 이미지 — 중앙 관계 일러스트 가장자리에 투명 전신을 겹쳐 표시한다. */}
         {pairMembers.length > 0 && (
           <>
             <label className="k-label" style={{ margin: 0 }}>
               {auObj ? `전신 이미지 — ${auObj.label} AU` : '전신 이미지'} <span style={{ fontWeight: 400, color: 'var(--faint)' }}>
-                — 중앙 전신 모드의 좌/우 · 미리보기에서 드래그=크기, 클릭=앞으로</span>
+                — 중앙 일러스트 위 좌/우 합성 · 투명 배경 PNG/WebP 권장</span>
             </label>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               {pairMembers.map(m => {
@@ -545,20 +548,17 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
               })}
             </div>
             {Object.keys(fulls).length > 0 && (
-              /* 실제 표시와 같은 비율(3/4.1)·같은 배치(fb 좌우 박스) — 여기서 잡은 크기가 상세 그대로 (v1.9) */
-              <div style={{
-                position: 'relative', width: '100%', maxWidth: 340, margin: '0 auto', aspectRatio: '3/4.1', borderRadius: 10,
-                overflow: 'hidden', background: 'linear-gradient(180deg,#262b33,#181b20)', border: '1px solid var(--line)',
-              }}>
+              /* 상세와 같은 중앙 스테이지·좌우 슬롯 좌표계 — 여기서 잡은 위치와 크기가 그대로 보인다. */
+              <div className="rel-editorial-stage rel-editorial-stage-preview">
+                <div className="rel-editorial-art">
+                  {arts[0] ? <MiniImageThumb item={arts[0]} /> : <div className="ph" style={{ width: '100%', height: '100%' }} />}
+                </div>
                 {pairMembers.map((m, i) => (
-                  <div key={m.charId} style={{
-                    position: 'absolute', width: '62%', bottom: '-2%',
-                    top: i === 0 ? '5%' : '12%',
-                    ...(i === 0 ? { left: '-4%' } : { right: '-4%' }),
+                  <div key={m.charId} className={`rel-editorial-full rel-editorial-full-edit rel-editorial-full-${i === 0 ? 'left' : 'right'}`} style={{
                     zIndex: (fullFront ?? pairMembers[1]?.charId) === m.charId ? 3 : 2,
                   }}>
                     <FullPrevImg draft={fulls[m.charId]}
-                      scale={fullScales[m.charId] ?? 90}
+                      scale={fullScales[m.charId] ?? REL_FULL_SCALE_DEFAULT}
                       offX={fullOffsets[m.charId]?.x ?? 0}
                       offY={fullOffsets[m.charId]?.y ?? 0}
                       name={memberNames?.[m.charId] ?? m.charId}
@@ -579,7 +579,23 @@ export function RelForm({ initial, auId, myChars, memberNames, existingIds, onSa
                 )}
               </div>
             )}
-            <p className="hint" style={{ margin: '4px 0 0' }}>드래그 = 위치 · 휠 = 크기 · 우클릭 = 앞으로/뒤로 — 미리보기 비율이 상세 화면과 동일합니다</p>
+            {Object.keys(fulls).length > 0 && (
+              <div className="rel-full-size-tools" aria-label="전신 이미지 크기 조절">
+                {pairMembers.filter(m => !!fulls[m.charId]).map(m => (
+                  <div key={m.charId}>
+                    <b>{memberNames?.[m.charId] ?? m.charId} 크기</b>
+                    <KStep value={fullScales[m.charId] ?? REL_FULL_SCALE_DEFAULT}
+                      min={REL_FULL_SCALE_MIN} max={REL_FULL_SCALE_MAX} step={5} suffix="%"
+                      onChange={v => setFullScales(s => ({ ...s, [m.charId]: v }))} />
+                    <button type="button" className="btn btn-ghost"
+                      onClick={() => setFullScales(s => ({ ...s, [m.charId]: REL_FULL_SCALE_DEFAULT }))}>
+                      기본
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="hint" style={{ margin: '4px 0 0' }}>드래그 = 위치 · 휠 또는 크기 버튼 = 확대/축소 · 우클릭 = 앞으로/뒤로 — 중앙 일러스트와 합성된 모습 그대로 미리 볼 수 있습니다</p>
 
             {/* 좌/우 한마디 문구 (v2.0 사용자 발견 — 색만 있고 문구 칸이 없었다) */}
             <label className="k-label" style={{ margin: '10px 0 0' }}>한마디 — 상단 좌/우 대사</label>

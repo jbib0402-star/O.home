@@ -156,7 +156,7 @@ export interface RelMember {
   palette: ColorChip[];          // 컬러 팔레트 아이콘
   linkedNote?: string;           // "회원 ○○ 연결됨" 등
   fullImgId?: string;            // 전신 이미지 (v1.9 — 자관 수정에서 등록, 중앙 전신 모드)
-  fullScale?: number;            // 전신 크기 % (비율 유지, 미리보기 휠로 조절 — 기본 90)
+  fullScale?: number;            // 전신 크기 % (비율 유지, 미리보기 휠·스테퍼로 조절)
   fullOffX?: number;             // 전신 가로 위치 오프셋 % (미리보기 드래그 — 기본 0, v1.9)
   fullOffY?: number;             // 전신 세로 위치 오프셋 % (기본 0 = 하단 밀착)
   /** 멤버 카드 얼굴칸(1:1) 크롭 (v2.0) — 캐릭터의 리스트 썸네일은 3:4라
@@ -169,6 +169,20 @@ export interface RelMember {
   /** 이 관계에서만 사용하는 선택 서술. 구형 데이터에는 없으며 빈 값이면 상세에서 숨긴다. */
   appearance?: string;
   features?: string;
+}
+
+/** 관계 화보 전신 크기.
+ *
+ * 독립 세로 칸에서 쓰던 90%는 합성 화보에서는 눈에 띄게 작다. PR #6 초기 버전이 편집 화면을
+ * 열기만 해도 90을 저장했기 때문에, 값이 없거나 정확히 예전 기본값(90)이면 새 화보 기본값으로
+ * 해석한다. 그 밖의 사용자가 조정한 값은 그대로 보존한다.
+ */
+export const REL_FULL_SCALE_MIN = 50;
+export const REL_FULL_SCALE_MAX = 240;
+export const REL_FULL_SCALE_DEFAULT = 120;
+export function relationFullScale(value?: number): number {
+  if (value == null || value === 90) return REL_FULL_SCALE_DEFAULT;
+  return Math.max(REL_FULL_SCALE_MIN, Math.min(REL_FULL_SCALE_MAX, value));
 }
 
 export interface TlSay { charId: string; text: string }

@@ -980,7 +980,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .char-head-actions{display:flex;gap:7px;align-items:center;align-content:flex-start;flex-wrap:wrap;min-width:0;padding-top:3px}
 .char-head-actions .hint{flex-basis:100%}
 /* 프로필 상세 — 기능 구조는 유지하고, 세 영역을 하나의 화보처럼 연결한다. */
-.profile-wrap{display:grid;grid-template-columns:64px minmax(300px,1fr) minmax(360px,430px);gap:clamp(12px,1.5vw,22px);align-items:start;min-height:560px}
+.profile-wrap{display:grid;grid-template-columns:64px minmax(300px,1fr) minmax(380px,470px);gap:clamp(12px,1.5vw,22px);align-items:start;min-height:560px}
 .side-icons{display:flex;flex-direction:column;gap:9px;padding:12px 0;position:sticky;top:10px}
 .side-icon-group{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0}
 .side-icon-label{font-family:var(--serif);font-size:calc(8px*var(--fs,1));font-weight:700;letter-spacing:.16em;color:var(--faint);line-height:1}

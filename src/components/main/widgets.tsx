@@ -204,7 +204,8 @@ export function LatestWidget() {
   const seeGal = canViewHref(menuSet, '/gallery', viewer);
   const latest = [
     ...(seeRoad ? roads : []).filter(it => canViewHref(menuSet, sectionHref('roadview', it.secId ?? MAIN_SEC), viewer)).map(it => ({
-      id: `r-${it.id}`, date: it.date, ref: it.imgId ?? it.imgUrl, ph: it.ph,
+      id: `r-${it.id}`, date: it.date,
+      ref: it.imgId ?? it.imgUrl ?? (it.youtubeId ? `https://i.ytimg.com/vi/${it.youtubeId}/hqdefault.jpg` : undefined), ph: it.ph,
       href: '/loadb', tip: `로드비 · No.${String(it.no ?? 0).padStart(3, '0')}`,
     })),
     // 갤러리 — 전체공개 + 접기 없는 게시물의 대표(첫) 이미지

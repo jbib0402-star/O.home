@@ -16,6 +16,7 @@ export interface RoadItem {
   date: string;              // ISO
   imgUrl?: string;           // (구) URL — 새 업로드는 imgId 사용
   imgId?: string;            // IndexedDB 파일 id (blobStore — 새로고침에도 유지)
+  youtubeId?: string;        // 유튜브 영상 ID — 링크는 저장 전에 정규화
   ph: string;                // 데모 플레이스홀더 클래스
   narrow?: boolean;          // 원본 가로가 좁은 이미지 (가운데 정렬)
   ratio: string;             // aspect-ratio 값

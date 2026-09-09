@@ -22,6 +22,28 @@ import { fileDrop } from '@/lib/dnd';
 const PAGE_SIZE = 4;
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
 
+/** 일반 영상·단축 URL·Shorts·embed 주소에서 안전한 11자리 영상 ID만 꺼낸다. */
+function youtubeVideoId(value: string): string | null {
+  const raw = value.trim();
+  if (/^[\w-]{11}$/.test(raw)) return raw;
+  try {
+    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
+    const host = url.hostname.replace(/^www\./, '').toLowerCase();
+    let id = '';
+    if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] ?? '';
+    else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
+      id = url.searchParams.get('v') ?? '';
+      if (!id) {
+        const parts = url.pathname.split('/').filter(Boolean);
+        if (['shorts', 'embed', 'live'].includes(parts[0] ?? '')) id = parts[1] ?? '';
+      }
+    }
+    return /^[\w-]{11}$/.test(id) ? id : null;
+  } catch {
+    return null;
+  }
+}
+
 function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;
   comments: Comment[];                                  // 이 그림의 댓글 — 분리 저장분 + 옛 항목 안의 것 (v2.0)
@@ -48,6 +70,9 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   const del = useConfirmDelete();
   const folded = item.fold && !open;
   const imgSrc = useBlobUrl(item.imgId ?? item.imgUrl);
+  const youtubeSrc = item.youtubeId
+    ? `https://www.youtube-nocookie.com/embed/${item.youtubeId}?rel=0`
+    : undefined;
   const saveEdit = () => {
     if (editCid && editText.trim()) onEditComment(item.id, editCid, editText.trim());
     setEditCid(null);
@@ -72,7 +97,13 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
       </div>
       {/* 투명 PNG도 카드색 위에 자연스럽게 — 어두운 하드코딩 제거 (v1.9 사용자 피드백) */}
       <div className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
-        {imgSrc ? (
+        {youtubeSrc && !folded ? (
+          <iframe className="rv-youtube" src={youtubeSrc} title={`${item.title || `No.${item.no ?? 0}`} 유튜브 영상`}
+            loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />
+        ) : youtubeSrc ? (
+          <div className="rv-youtube rv-youtube-folded" aria-hidden="true" />
+        ) : imgSrc ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={imgSrc} alt={item.title}
             className={`artimg ${item.narrow ? 'narrow' : ''}`} style={{ filter: folded ? 'blur(18px)' : undefined }} />
@@ -193,6 +224,8 @@ function RoadviewPageInner() {
   const [eNo, setENo] = useState('');      // 번호 수정 (v1.9 — 제목 없이 번호만 쓰는 체계)
   const [eAdult, setEAdult] = useState(false);
   const [delFor, setDelFor] = useState<RoadItem | null>(null);
+  const [youtubeOpen, setYoutubeOpen] = useState(false);
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
   // 즉시 업로드 (v1.7) — IndexedDB 실저장 (R2 연동 시 서버로 이전)
   const upload = async (f: File | undefined) => {
@@ -206,6 +239,20 @@ function RoadviewPageInner() {
     };
     setItems([it, ...items]);
     toast(`${padNo(it.no)} 업로드되었습니다`);
+  };
+
+  const uploadYoutube = () => {
+    const youtubeId = youtubeVideoId(youtubeUrl);
+    if (!youtubeId) { toast('올바른 유튜브 링크를 입력해 주세요'); return; }
+    const it: RoadItem = {
+      id: newId(), title: '', author: user!.nickname, authorId: user!.id,
+      date: new Date().toISOString(), youtubeId, ph: '', ratio: '16 / 9',
+      fold: null, comments: [], no: nextNo,
+    };
+    setItems([it, ...items]);
+    setYoutubeUrl('');
+    setYoutubeOpen(false);
+    toast(`${padNo(it.no)} 유튜브 영상이 추가되었습니다`);
   };
 
   const addComment = (id: string, text: string, guest?: { name: string }) => {
@@ -257,6 +304,7 @@ function RoadviewPageInner() {
                 onChange={e => { upload(e.target.files?.[0]); e.target.value = ''; }} />
               <button className="btn btn-dark" onClick={() => fileRef.current?.click()}
                 {...fileDrop(fl => upload(fl[0]))}>↑ UPLOAD</button>
+              <button className="btn btn-ghost" onClick={() => setYoutubeOpen(true)}>▶ YOUTUBE</button>
             </>
           )}
           <SearchBar onSearch={setQ} />
@@ -322,6 +370,17 @@ function RoadviewPageInner() {
           } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelFor(null) },
         ]} />
+
+      <Modal open={youtubeOpen} onClose={() => { setYoutubeOpen(false); setYoutubeUrl(''); }} small
+        title="유튜브 영상 추가" desc="일반 영상, youtu.be 단축 주소, Shorts 링크를 사용할 수 있습니다."
+        actions={<>
+          <button className="btn btn-ghost" onClick={() => { setYoutubeOpen(false); setYoutubeUrl(''); }}>CANCEL</button>
+          <button className="btn btn-dark" disabled={!youtubeUrl.trim()} onClick={uploadYoutube}>ADD</button>
+        </>}>
+        <KInput autoFocus value={youtubeUrl} placeholder="https://youtu.be/..."
+          onChange={e => setYoutubeUrl(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') uploadYoutube(); }} />
+      </Modal>
     </section>
   );
 }

@@ -1510,6 +1510,8 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .hv-actions{opacity:0;pointer-events:none;transition:opacity .15s}
 .banner:hover .hv-actions,.deco-wgt:hover .hv-actions{opacity:1;pointer-events:auto}
 .roadview-item .artimg{display:block;width:100%;height:auto}
+.roadview-item .rv-youtube{display:block;width:100%;aspect-ratio:16/9;border:0;background:#000}
+.roadview-item .rv-youtube-folded{filter:blur(18px);background:color-mix(in srgb,var(--ink) 72%,var(--panel-solid))}
 .roadview-item .artimg.narrow{width:min(400px,100%)} /* 좁은 이미지: 확대하지 않고 가운데 (v1.8) */
 .roadview-item .art img{display:block;max-width:100%;height:auto;margin:0 auto}
 .roadview-item .art .meta{position:absolute;left:18px;bottom:14px;color:#fff;z-index:3;font-size:calc(11px*var(--fs,1))}

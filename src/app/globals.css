@@ -980,7 +980,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .char-head-actions{display:flex;gap:7px;align-items:center;align-content:flex-start;flex-wrap:wrap;min-width:0;padding-top:3px}
 .char-head-actions .hint{flex-basis:100%}
 /* 프로필 상세 — 기능 구조는 유지하고, 세 영역을 하나의 화보처럼 연결한다. */
-.profile-wrap{display:grid;grid-template-columns:64px minmax(300px,1fr) minmax(380px,550px);gap:clamp(12px,1.5vw,22px);align-items:start;min-height:560px}
+.profile-wrap{display:grid;grid-template-columns:64px minmax(300px,700px) minmax(380px,550px);justify-content:center;gap:clamp(12px,1.5vw,22px);align-items:start;min-height:560px}
 .side-icons{display:flex;flex-direction:column;gap:9px;padding:12px 0;position:sticky;top:10px}
 .side-icon-group{display:flex;flex-direction:column;align-items:center;gap:9px;min-width:0}
 .side-icon-label{font-family:var(--serif);font-size:calc(8px*var(--fs,1));font-weight:700;letter-spacing:.16em;color:var(--faint);line-height:1}
@@ -1001,7 +1001,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .profile-art-contain img{display:block;width:100%;height:100%;max-width:100%;max-height:100%;object-fit:contain;object-position:center center}
 /* 스티키 안정성 (v1.9): 끝까지 스크롤했을 때 아트 하단 == 정보 패널 하단이 되도록
    하단 여백을 계산값으로 고정 — viewH(100vh-58) - top(10) - artH(100vh-150) = 82px */
-.page-char-detail{padding-bottom:82px}
+.page-char-detail{max-width:1450px;padding-bottom:82px}
 .profile-info{padding:clamp(24px,3vw,40px);overflow:visible;background:color-mix(in srgb,var(--panel) 90%,transparent);box-shadow:none}
 .profile-info-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:18px}
 .profile-kicker,.profile-section-label{font-size:calc(9px*var(--fs,1));font-weight:700;letter-spacing:.22em;color:var(--faint);text-transform:uppercase}

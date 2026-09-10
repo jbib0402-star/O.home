@@ -1527,6 +1527,12 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .cmt-hidden{color:var(--faint);font-style:italic}
 .cmt-fold-button{display:block;margin-top:5px;padding:5px 8px;border:1px dashed var(--line);border-radius:7px;color:var(--faint);font-size:calc(11px*var(--fs,1));text-align:left}
 .cmt-fold-button:hover{color:var(--ink);border-color:var(--line-dark)}
+.cmt-reply-action{margin-left:8px;color:var(--faint);font-size:calc(11px*var(--fs,1));vertical-align:baseline}
+.cmt-reply-action:hover{color:var(--accent)}
+.cmt-reply-form{margin:-4px 0 14px 22px;padding:10px 10px 10px 12px;border-left:2px solid var(--line);background:color-mix(in srgb,var(--panel-solid) 58%,transparent);border-radius:0 8px 8px 0}
+.cmt-reply-form>small{display:block;margin-bottom:7px;color:var(--faint)}
+.cmt-reply-form .ci-row{display:flex;gap:6px}
+.cmt-reply-form .ci-row input{min-width:0;flex:1}
 
 /* ---------- 그림백업 (4.11) ---------- */
 .g-item{overflow:hidden;padding:0;cursor:var(--cur-pointer,pointer);transition:.2s}

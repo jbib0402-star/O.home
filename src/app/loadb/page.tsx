@@ -47,7 +47,7 @@ function youtubeVideoId(value: string): string | null {
 function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;
   comments: Comment[];                                  // 이 그림의 댓글 — 분리 저장분 + 옛 항목 안의 것 (v2.0)
-  onComment: (id: string, text: string, options: { secret: boolean; folded: boolean }, guest?: { name: string }) => void;
+  onComment: (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }, guest?: { name: string }) => void;
   onEditComment: (id: string, cid: string, text: string) => void;
   onDeleteComment: (id: string, cid: string) => void;
   canComment: boolean;
@@ -68,6 +68,11 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   const [secret, setSecret] = useState(false);
   const [foldComment, setFoldComment] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
+  const [replyTo, setReplyTo] = useState<string | null>(null);
+  const [replyLabel, setReplyLabel] = useState('');
+  const [replyText, setReplyText] = useState('');
+  const [replySecret, setReplySecret] = useState(false);
+  const [replyFolded, setReplyFolded] = useState(false);
   // 댓글 인라인 수정 (v1.9)
   const [editCid, setEditCid] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -95,6 +100,68 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     if (level !== 'free') return;
     if (mode === 'edit') { setEditCid(c.id); setEditText(c.text); }
     else del.ask('이 댓글을 삭제하시겠습니까?', () => onDeleteComment(item.id, c.id));
+  };
+  const openReply = (c: Comment, threadId: string) => {
+    setReplyTo(threadId);
+    setReplyLabel(c.author);
+    setReplyText('');
+    setReplySecret(!!c.secret);
+    setReplyFolded(false);
+  };
+  const postReply = () => {
+    if (!replyTo || !replyText.trim()) return;
+    if (guestMode && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
+    onComment(item.id, replyText.trim(), { secret: replySecret, folded: replyFolded, parentId: replyTo },
+      guestMode ? { name: gName.trim() } : undefined);
+    setReplyTo(null);
+    setReplyLabel('');
+    setReplyText('');
+    setReplySecret(false);
+    setReplyFolded(false);
+  };
+  const renderComment = (c: Comment, replyDepth = false, threadId = c.id) => {
+    const parent = c.parentId ? comments.find(x => x.id === c.parentId) : undefined;
+    const canRead = !c.secret || isAdmin || (!!viewerId
+      && (c.authorId === viewerId || item.authorId === viewerId || parent?.authorId === viewerId));
+    const isFolded = !!c.folded && !expanded.has(c.id);
+    return (
+      <div className={`cmt ${replyDepth ? 'reply-depth' : ''} ${c.secret ? 'secret' : ''}`} key={c.id}>
+        <b>{c.author}</b><small>{fmtDate(c.date)}</small>
+        {c.secret && <small className="cmt-secret-mark">🔒 비밀</small>}
+        {canRead && editCid !== c.id && (
+          <>
+            {canComment && (
+              <button className="cmt-reply-action" onClick={() => openReply(c, threadId)}>답글</button>
+            )}
+            {editLevel(c) !== null && (
+              <small style={{ cursor: 'var(--cur-pointer,pointer)', color: 'var(--accent)', marginLeft: 8 }}
+                onClick={() => askManage(c, 'edit')}>수정</small>
+            )}
+            {delLevel(c) !== null && (
+              <small style={{ cursor: 'var(--cur-pointer,pointer)', marginLeft: 6 }}
+                onClick={() => askManage(c, 'del')}>삭제</small>
+            )}
+          </>
+        )}
+        {!canRead ? (
+          <p className="cmt-hidden">🔒 비밀 댓글입니다.</p>
+        ) : editCid === c.id ? (
+          <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
+            <KInput value={editText} autoFocus onChange={e => setEditText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditCid(null); }}
+              style={{ flex: 1 }} />
+            <button className="btn btn-dark" style={{ padding: '4px 11px', fontSize: 10.5 }} onClick={saveEdit}>SAVE</button>
+            <button className="btn btn-ghost" style={{ padding: '4px 9px', fontSize: 10.5 }} onClick={() => setEditCid(null)}>✕</button>
+          </div>
+        ) : isFolded ? (
+          <button className="cmt-fold-button" onClick={() => setExpanded(prev => new Set(prev).add(c.id))}>
+            ▸ 접힌 댓글입니다 — 펼치기
+          </button>
+        ) : (
+          <p>{c.text}</p>
+        )}
+      </div>
+    );
   };
   return (
     <div className="panel roadview-item">
@@ -145,44 +212,29 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
       </div>
       <div className="cmt-side">
         <div className="list">
-          {comments.map(c => {
-            const canRead = !c.secret || isAdmin || (!!viewerId && (c.authorId === viewerId || item.authorId === viewerId));
-            const isFolded = !!c.folded && !expanded.has(c.id);
-            return (
-            <div className={`cmt ${c.secret ? 'secret' : ''}`} key={c.id}>
-              <b>{c.author}</b><small>{fmtDate(c.date)}</small>
-              {c.secret && <small className="cmt-secret-mark">🔒 비밀</small>}
-              {canRead && editCid !== c.id && (
-                <>
-                  {editLevel(c) !== null && (
-                    <small style={{ cursor: 'var(--cur-pointer,pointer)', color: 'var(--accent)', marginLeft: 8 }}
-                      onClick={() => askManage(c, 'edit')}>수정</small>
-                  )}
-                  {delLevel(c) !== null && (
-                    <small style={{ cursor: 'var(--cur-pointer,pointer)', marginLeft: 6 }}
-                      onClick={() => askManage(c, 'del')}>삭제</small>
-                  )}
-                </>
-              )}
-              {!canRead ? (
-                <p className="cmt-hidden">🔒 비밀 댓글입니다.</p>
-              ) : editCid === c.id ? (
-                <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-                  <KInput value={editText} autoFocus onChange={e => setEditText(e.target.value)}
-                    onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditCid(null); }}
-                    style={{ flex: 1 }} />
-                  <button className="btn btn-dark" style={{ padding: '4px 11px', fontSize: 10.5 }} onClick={saveEdit}>SAVE</button>
-                  <button className="btn btn-ghost" style={{ padding: '4px 9px', fontSize: 10.5 }} onClick={() => setEditCid(null)}>✕</button>
+          {comments.filter(c => !c.parentId || !comments.some(p => p.id === c.parentId)).map(c => (
+            <React.Fragment key={c.id}>
+              {renderComment(c)}
+              {replyTo === c.id && (
+                <div className="cmt-reply-form">
+                  <small>{replyLabel}님에게 답글</small>
+                  {guestMode && <GuestIdBar name={gName} onName={setGName} />}
+                  <div className="cmt-options">
+                    <KCheck label="비밀 답글" checked={replySecret} onChange={setReplySecret} />
+                    <KCheck label="답글 접기" checked={replyFolded} onChange={setReplyFolded} />
+                  </div>
+                  <div className="ci-row">
+                    <KInput autoFocus value={replyText} placeholder="답글 남기기..."
+                      onChange={e => setReplyText(e.target.value)}
+                      onKeyDown={e => { if (e.key === 'Enter') postReply(); if (e.key === 'Escape') setReplyTo(null); }} />
+                    <button className="btn btn-dark" onClick={postReply}>REPLY</button>
+                    <button className="btn btn-ghost" onClick={() => setReplyTo(null)}>✕</button>
+                  </div>
                 </div>
-              ) : isFolded ? (
-                <button className="cmt-fold-button" onClick={() => setExpanded(prev => new Set(prev).add(c.id))}>
-                  ▸ 접힌 댓글입니다 — 펼치기
-                </button>
-              ) : (
-                <p>{c.text}</p>
               )}
-            </div>
-          )})}
+              {comments.filter(r => r.parentId === c.id).map(r => renderComment(r, true, c.id))}
+            </React.Fragment>
+          ))}
           {comments.length === 0 && <p className="hint">첫 댓글을 남겨보세요</p>}
         </div>
         {/* 게스트 작성(방문자 허용) — 구분선 아래 GUEST 바 + 입력줄 세로 배치 */}
@@ -289,7 +341,7 @@ function RoadviewPageInner() {
     toast(`${padNo(it.no)} 유튜브 영상이 추가되었습니다`);
   };
 
-  const addComment = (id: string, text: string, options: { secret: boolean; folded: boolean }, guest?: { name: string }) => {
+  const addComment = (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }, guest?: { name: string }) => {
     // 게스트 댓글 (방문자 권한, v1.9) — 닉네임+비밀번호, authorId는 빈 값
     const base = { id: newId(), text, date: new Date().toISOString(), target: 'road' as const, targetId: id };
     const c: CommentRow = guest
@@ -298,10 +350,12 @@ function RoadviewPageInner() {
     setCmtRows([...cmtRows, c]);
     // 알림 (4.13) — 그림 작성자에게 (본인 댓글 제외)
     const target = items.find(it => it.id === id);
-    if (target && target.authorId && target.authorId !== (user?.id ?? '')) {
+    const parent = options.parentId ? commentsFor(cmtRows, 'road', id, target?.comments ?? []).find(c => c.id === options.parentId) : undefined;
+    const notifyUserId = parent?.authorId || target?.authorId;
+    if (target && notifyUserId && notifyUserId !== (user?.id ?? '')) {
       pushNotif({
-        type: 'comment', toUserId: target.authorId, href: '/roadview',
-        title: `${padNo(target.no)}에 새 댓글`,   // 알림도 번호 기준 (v1.9)
+        type: 'comment', toUserId: notifyUserId, href: '/roadview',
+        title: `${padNo(target.no)}에 새 ${options.parentId ? '답글' : '댓글'}`,
         body: options.secret ? `${c.author} — 🔒 비밀 댓글` : `${c.author} — ${text.slice(0, 50)}`,
       });
     }
@@ -314,8 +368,9 @@ function RoadviewPageInner() {
     else setItems(items.map(it => it.id === id ? { ...it, comments: it.comments.map(c => c.id === cid ? { ...c, text } : c) } : it));
   };
   const deleteComment = (id: string, cid: string) => {
-    if (cmtRows.some(c => c.id === cid)) setCmtRows(cmtRows.filter(c => c.id !== cid));
-    else setItems(items.map(it => it.id === id ? { ...it, comments: it.comments.filter(c => c.id !== cid) } : it));
+    setCmtRows(cmtRows.filter(c => c.id !== cid && c.parentId !== cid));
+    setItems(items.map(it => it.id === id
+      ? { ...it, comments: it.comments.filter(c => c.id !== cid && c.parentId !== cid) } : it));
   };
   /* 수정은 작성자 본인만 — 관리자도 타인 댓글은 삭제만 (v1.9 사용자 확정).
      **손님 댓글은 손댈 수 없다** (v2.0 사용자 확정) — 비밀번호로 본인을 확인하던 길을

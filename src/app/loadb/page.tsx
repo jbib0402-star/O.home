@@ -79,7 +79,8 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   // 게스트 댓글 관리 — 비밀번호 확인 모달
   const del = useConfirmDelete();
   const folded = item.fold && !open;
-  const imgSrc = useBlobUrl(item.imgId ?? item.imgUrl);
+  const secretLocked = !!item.secret && !isAdmin && item.authorId !== viewerId;
+  const imgSrc = useBlobUrl(secretLocked ? undefined : (item.imgId ?? item.imgUrl));
   const youtubeSrc = item.youtubeId
     ? `https://www.youtube-nocookie.com/embed/${item.youtubeId}?rel=0`
     : undefined;
@@ -168,11 +169,16 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
       {/* 그림별 상단 번호 영역 (v1.9 사용자 확정) — 숫자만 표시 (제목·작성자 없이) */}
       <div className="rv-head">
         <b>No.{String(item.no ?? 0).padStart(3, '0')}</b>
-        {item.visibility === 'private' && <span className="rv-secret-badge">🔒 SECRET</span>}
+        {(item.secret || item.visibility === 'private') && <span className="rv-secret-badge">🔒 SECRET</span>}
       </div>
       {/* 투명 PNG도 카드색 위에 자연스럽게 — 어두운 하드코딩 제거 (v1.9 사용자 피드백) */}
       <div className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
-        {youtubeSrc && !folded ? (
+        {secretLocked ? (
+          <div className="rv-secret-cover" role="status">
+            <b>🔒 비밀글입니다</b>
+            <span>작성자와 관리자만 볼 수 있습니다.</span>
+          </div>
+        ) : youtubeSrc && !folded ? (
           <iframe className="rv-youtube" src={youtubeSrc} title={`${item.title || `No.${item.no ?? 0}`} 유튜브 영상`}
             loading="lazy" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
             referrerPolicy="strict-origin-when-cross-origin" allowFullScreen />
@@ -188,7 +194,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
             <span>{item.title}</span>
           </div>
         )}
-        {folded && (
+        {folded && !secretLocked && (
           <div className="cover" onClick={() => setOpen(true)}>
             <div>
               <b>{item.fold!.type === 'custom' ? (item.fold!.label || '접힘') : FOLD_LABEL[item.fold!.type]}</b><br />
@@ -210,7 +216,11 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
           </div>
         )}
       </div>
-      <div className="cmt-side">
+      {secretLocked ? (
+        <div className="cmt-side rv-secret-comments">
+          <span>🔒 댓글도 비공개 상태입니다.</span>
+        </div>
+      ) : <div className="cmt-side">
         <div className="list">
           {comments.filter(c => !c.parentId || !comments.some(p => p.id === c.parentId)).map(c => (
             <React.Fragment key={c.id}>
@@ -256,7 +266,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
             <button className="btn btn-dark" disabled={!canComment} onClick={post}>POST</button>
           </div>
         </div>
-      </div>
+      </div>}
       {del.element}
     </div>
   );
@@ -273,6 +283,8 @@ function RoadviewPageInner() {
   // 여러 개로 만든 섹션 (v2.0) — 주소의 ?s= 가 가리키는 것만 보여 준다
   const sec = useSectionParam('roadview');
   const sectionItems = filterSection(itemsAll, sec.id);
+  // 새 비밀글은 목록 껍데기를 공개하고 미디어만 화면에서 잠근다. 예전 private 항목은 서버가
+  // 비로그인에게 내려주지 않으므로, 작성자·관리자 화면에서만 하위 호환으로 유지한다.
   const items = sectionItems.filter(it => it.visibility !== 'private' || isAdmin || it.authorId === user?.id);
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setItems = sectionSetter(itemsAll, sec.id, setItemsAll);
@@ -285,6 +297,13 @@ function RoadviewPageInner() {
   // 그림 번호 (v1.9) — 번호 없는 기존 그림은 오래된 순으로 자동 부여
   useEffect(() => {
     if (!roadLoaded) return;
+    // 구형 비밀 업로드는 DB 행 자체가 private라 방문자 목록에도 없었다. 관리자가 로드비를
+    // 처음 연 시점에만 새 방식(공개 목록 껍데기 + 잠긴 미디어)으로 한 번 변환한다.
+    if (isAdmin && itemsAll.some(it => it.visibility === 'private')) {
+      setItemsAll(itemsAll.map(it => it.visibility === 'private'
+        ? { ...it, visibility: 'public', secret: true } : it));
+      return;
+    }
     if (items.some(it => it.no === undefined)) {
       let n = Math.max(0, ...items.map(it => it.no ?? 0));
       const next = [...items].sort((a, b) => a.date.localeCompare(b.date))
@@ -292,7 +311,7 @@ function RoadviewPageInner() {
       setItems(items.map(it => next.find(x => x.id === it.id) ?? it));
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [roadLoaded]);
+  }, [roadLoaded, isAdmin, itemsAll, setItemsAll]);
   // 다음 번호 — 항상 최대+1 자동 증가. 건너뛰기·재배치는 각 그림 편집 모달의 번호 수정으로 (v1.9)
   const nextNo = Math.max(0, ...items.map(it => it.no ?? 0)) + 1;
   const padNo = (n?: number) => `No.${String(n ?? 0).padStart(3, '0')}`;
@@ -317,7 +336,7 @@ function RoadviewPageInner() {
       date: new Date().toISOString(), imgId, ph: '', ratio: 'auto',
       fold: null, comments: [],
       no: nextNo,   // 번호 자동 부여 (v1.9)
-      visibility: secretUpload ? 'private' : 'public',
+      visibility: 'public', secret: secretUpload,
     };
     setItems([it, ...items]);
     setPendingUpload(null);
@@ -332,7 +351,7 @@ function RoadviewPageInner() {
       id: newId(), title: '', author: user!.nickname, authorId: user!.id,
       date: new Date().toISOString(), youtubeId, ph: '', ratio: '16 / 9',
       fold: null, comments: [], no: nextNo,
-      visibility: youtubeSecret ? 'private' : 'public',
+      visibility: 'public', secret: youtubeSecret,
     };
     setItems([it, ...items]);
     setYoutubeUrl('');
@@ -411,7 +430,7 @@ function RoadviewPageInner() {
              손님이 올린 것은 이제 관리자만 손댈 수 있다(손님 확인 수단이 없다) */
           canEditItem={!!it.authorId && it.authorId === user?.id}
           canDeleteItem={isAdmin || (!!it.authorId && it.authorId === user?.id)}
-          onEdit={() => { setEditFor(it); setENo(String(it.no ?? '')); setEAdult(it.fold?.type === 'adult'); setESecret(it.visibility === 'private'); }}
+          onEdit={() => { setEditFor(it); setENo(String(it.no ?? '')); setEAdult(it.fold?.type === 'adult'); setESecret(!!it.secret || it.visibility === 'private'); }}
           onDelete={() => setDelFor(it)} />
       ))}
       {visible.length === 0 && (
@@ -433,7 +452,7 @@ function RoadviewPageInner() {
             const nv = parseInt(eNo, 10);
             setItems(items.map(x => x.id === editFor!.id
               ? { ...x, no: Number.isFinite(nv) && nv > 0 ? nv : x.no, fold: eAdult ? { type: 'adult' } : null,
-                visibility: eSecret ? 'private' : 'public' } : x));
+                visibility: 'public', secret: eSecret } : x));
             setEditFor(null);
           }}>SAVE</button>
         </>}>

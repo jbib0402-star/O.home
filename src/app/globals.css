@@ -1503,6 +1503,10 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .roadview-item .rv-head{grid-column:1/-1;padding:11px 18px;border-bottom:1px solid var(--line)}
 .roadview-item .rv-head b{font-size:calc(13.5px*var(--fs,1));letter-spacing:.08em}
 .rv-secret-badge{margin-left:9px;font-size:calc(8.5px*var(--fs,1));font-weight:700;letter-spacing:.12em;color:var(--faint)}
+.rv-secret-cover{width:100%;min-height:260px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;color:var(--faint);background:color-mix(in srgb,var(--panel-solid) 88%,var(--line))}
+.rv-secret-cover b{font-family:var(--serif);font-size:calc(17px*var(--fs,1));letter-spacing:.08em;color:var(--sub)}
+.rv-secret-cover span,.rv-secret-comments span{font-size:calc(11px*var(--fs,1))}
+.rv-secret-comments{align-items:center;justify-content:center;min-height:180px;color:var(--faint)}
 .roadview-item .art{position:relative;display:flex;align-items:center;justify-content:center;min-height:0}
 /* 로드뷰 편집·삭제 — 이미지 호버 시에만 표시 */
 .rv-actions{opacity:0;pointer-events:none;transition:opacity .15s}

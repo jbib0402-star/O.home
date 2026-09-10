@@ -206,6 +206,7 @@ export function LatestWidget() {
     ...(seeRoad ? roads : [])
       .filter(it => canViewHref(menuSet, sectionHref('roadview', it.secId ?? MAIN_SEC), viewer))
       .filter(it => it.visibility !== 'private' || isAdmin || it.authorId === user?.id)
+      .filter(it => !it.secret || isAdmin || it.authorId === user?.id)
       .map(it => ({
       id: `r-${it.id}`, date: it.date,
       ref: it.imgId ?? it.imgUrl ?? (it.youtubeId ? `https://i.ytimg.com/vi/${it.youtubeId}/hqdefault.jpg` : undefined), ph: it.ph,

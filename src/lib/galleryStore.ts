@@ -24,6 +24,7 @@ export interface RoadItem {
   comments: Comment[];
   no?: number;               // 그림 번호 (v1.9 — 제목 대신 번호로 식별, 알림도 번호 기준)
   visibility?: Visibility;   // 비밀 업로드는 private — 기존 항목은 public로 취급
+  secret?: boolean;          // 목록에는 잠금 글로 표시하고, 작성자·관리자만 미디어 열람
 }
 
 export const ROAD_SEED: RoadItem[] = [];

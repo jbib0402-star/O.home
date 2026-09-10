@@ -19,6 +19,8 @@ export interface Comment {
   date: string;          // ISO
   parentId?: string;     // 대댓글
   guestPw?: string;      // 게스트 본인 수정·삭제용 (mock — 실서비스는 서버 해시)
+  secret?: boolean;      // 작성자·대상 글 작성자·관리자만 내용 표시
+  folded?: boolean;      // 본문을 사용자가 펼치기 전까지 접어서 표시
 }
 
 /**

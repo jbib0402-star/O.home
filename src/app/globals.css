@@ -1502,6 +1502,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 /* 그림별 상단 번호 영역 (v1.9) — 숫자만 표시 */
 .roadview-item .rv-head{grid-column:1/-1;padding:11px 18px;border-bottom:1px solid var(--line)}
 .roadview-item .rv-head b{font-size:calc(13.5px*var(--fs,1));letter-spacing:.08em}
+.rv-secret-badge{margin-left:9px;font-size:calc(8.5px*var(--fs,1));font-weight:700;letter-spacing:.12em;color:var(--faint)}
 .roadview-item .art{position:relative;display:flex;align-items:center;justify-content:center;min-height:0}
 /* 로드뷰 편집·삭제 — 이미지 호버 시에만 표시 */
 .rv-actions{opacity:0;pointer-events:none;transition:opacity .15s}
@@ -1521,6 +1522,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .cmt-side .list{flex:1;min-height:120px;padding:16px;overflow:auto;scrollbar-color:var(--sb-thumb,#c9ccd2) transparent;scrollbar-width:thin}
 .roadview-item{grid-auto-rows:minmax(0,auto)}
 .roadview-item .cmt-side{max-height:none}
+.cmt-options{display:flex;gap:14px;flex-wrap:wrap;padding:0 0 7px}
+.cmt-secret-mark{margin-left:7px;color:var(--accent)}
+.cmt-hidden{color:var(--faint);font-style:italic}
+.cmt-fold-button{display:block;margin-top:5px;padding:5px 8px;border:1px dashed var(--line);border-radius:7px;color:var(--faint);font-size:calc(11px*var(--fs,1));text-align:left}
+.cmt-fold-button:hover{color:var(--ink);border-color:var(--line-dark)}
 
 /* ---------- 그림백업 (4.11) ---------- */
 .g-item{overflow:hidden;padding:0;cursor:var(--cur-pointer,pointer);transition:.2s}

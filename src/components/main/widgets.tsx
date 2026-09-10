@@ -203,7 +203,10 @@ export function LatestWidget() {
   const seeRoad = canViewHref(menuSet, '/loadb', viewer);
   const seeGal = canViewHref(menuSet, '/gallery', viewer);
   const latest = [
-    ...(seeRoad ? roads : []).filter(it => canViewHref(menuSet, sectionHref('roadview', it.secId ?? MAIN_SEC), viewer)).map(it => ({
+    ...(seeRoad ? roads : [])
+      .filter(it => canViewHref(menuSet, sectionHref('roadview', it.secId ?? MAIN_SEC), viewer))
+      .filter(it => it.visibility !== 'private' || isAdmin || it.authorId === user?.id)
+      .map(it => ({
       id: `r-${it.id}`, date: it.date,
       ref: it.imgId ?? it.imgUrl ?? (it.youtubeId ? `https://i.ytimg.com/vi/${it.youtubeId}/hqdefault.jpg` : undefined), ph: it.ph,
       href: '/loadb', tip: `로드비 · No.${String(it.no ?? 0).padStart(3, '0')}`,

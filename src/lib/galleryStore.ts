@@ -23,6 +23,7 @@ export interface RoadItem {
   fold: { type: FoldType; label?: string } | null;
   comments: Comment[];
   no?: number;               // 그림 번호 (v1.9 — 제목 대신 번호로 식별, 알림도 번호 기준)
+  visibility?: Visibility;   // 비밀 업로드는 private — 기존 항목은 public로 취급
 }
 
 export const ROAD_SEED: RoadItem[] = [];

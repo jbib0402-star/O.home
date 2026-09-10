@@ -44,14 +44,16 @@ function youtubeVideoId(value: string): string | null {
   }
 }
 
-function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
+function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;
   comments: Comment[];                                  // 이 그림의 댓글 — 분리 저장분 + 옛 항목 안의 것 (v2.0)
-  onComment: (id: string, text: string, guest?: { name: string }) => void;
+  onComment: (id: string, text: string, options: { secret: boolean; folded: boolean }, guest?: { name: string }) => void;
   onEditComment: (id: string, cid: string, text: string) => void;
   onDeleteComment: (id: string, cid: string) => void;
   canComment: boolean;
   guestMode: boolean;                                   // 비로그인 방문자 작성 (닉네임+비밀번호 — 방명록 4.7과 동일)
+  viewerId?: string;
+  isAdmin: boolean;
   editLevel: (c: Comment) => 'free' | 'pw' | null;      // 수정 — 본인만 (게스트는 비밀번호)
   delLevel: (c: Comment) => 'free' | 'pw' | null;       // 삭제 — 본인·관리자 (게스트는 비밀번호)
   canEditItem: boolean;                                 // 그림 수정 — 작성자 본인만 (v1.9)
@@ -63,6 +65,9 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [gName, setGName] = useState('');               // 게스트 닉네임
+  const [secret, setSecret] = useState(false);
+  const [foldComment, setFoldComment] = useState(false);
+  const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
   // 댓글 인라인 수정 (v1.9)
   const [editCid, setEditCid] = useState<string | null>(null);
   const [editText, setEditText] = useState('');
@@ -80,8 +85,10 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   const post = () => {
     if (!text.trim()) return;
     if (guestMode && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
-    onComment(item.id, text.trim(), guestMode ? { name: gName.trim() } : undefined);
+    onComment(item.id, text.trim(), { secret, folded: foldComment }, guestMode ? { name: gName.trim() } : undefined);
     setText('');
+    setSecret(false);
+    setFoldComment(false);
   };
   const askManage = (c: Comment, mode: 'edit' | 'del') => {
     const level = mode === 'edit' ? editLevel(c) : delLevel(c);
@@ -94,6 +101,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
       {/* 그림별 상단 번호 영역 (v1.9 사용자 확정) — 숫자만 표시 (제목·작성자 없이) */}
       <div className="rv-head">
         <b>No.{String(item.no ?? 0).padStart(3, '0')}</b>
+        {item.visibility === 'private' && <span className="rv-secret-badge">🔒 SECRET</span>}
       </div>
       {/* 투명 PNG도 카드색 위에 자연스럽게 — 어두운 하드코딩 제거 (v1.9 사용자 피드백) */}
       <div className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
@@ -137,10 +145,14 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
       </div>
       <div className="cmt-side">
         <div className="list">
-          {comments.map(c => (
-            <div className="cmt" key={c.id}>
+          {comments.map(c => {
+            const canRead = !c.secret || isAdmin || (!!viewerId && (c.authorId === viewerId || item.authorId === viewerId));
+            const isFolded = !!c.folded && !expanded.has(c.id);
+            return (
+            <div className={`cmt ${c.secret ? 'secret' : ''}`} key={c.id}>
               <b>{c.author}</b><small>{fmtDate(c.date)}</small>
-              {editCid !== c.id && (
+              {c.secret && <small className="cmt-secret-mark">🔒 비밀</small>}
+              {canRead && editCid !== c.id && (
                 <>
                   {editLevel(c) !== null && (
                     <small style={{ cursor: 'var(--cur-pointer,pointer)', color: 'var(--accent)', marginLeft: 8 }}
@@ -152,7 +164,9 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
                   )}
                 </>
               )}
-              {editCid === c.id ? (
+              {!canRead ? (
+                <p className="cmt-hidden">🔒 비밀 댓글입니다.</p>
+              ) : editCid === c.id ? (
                 <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
                   <KInput value={editText} autoFocus onChange={e => setEditText(e.target.value)}
                     onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditCid(null); }}
@@ -160,17 +174,27 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
                   <button className="btn btn-dark" style={{ padding: '4px 11px', fontSize: 10.5 }} onClick={saveEdit}>SAVE</button>
                   <button className="btn btn-ghost" style={{ padding: '4px 9px', fontSize: 10.5 }} onClick={() => setEditCid(null)}>✕</button>
                 </div>
+              ) : isFolded ? (
+                <button className="cmt-fold-button" onClick={() => setExpanded(prev => new Set(prev).add(c.id))}>
+                  ▸ 접힌 댓글입니다 — 펼치기
+                </button>
               ) : (
                 <p>{c.text}</p>
               )}
             </div>
-          ))}
+          )})}
           {comments.length === 0 && <p className="hint">첫 댓글을 남겨보세요</p>}
         </div>
         {/* 게스트 작성(방문자 허용) — 구분선 아래 GUEST 바 + 입력줄 세로 배치 */}
         <div className={`cmt-input ${guestMode && canComment ? 'guest' : ''}`}>
           {guestMode && canComment && (
             <GuestIdBar name={gName} onName={setGName} />
+          )}
+          {canComment && (
+            <div className="cmt-options">
+              <KCheck label="비밀 댓글" checked={secret} onChange={setSecret} />
+              <KCheck label="댓글 접기" checked={foldComment} onChange={setFoldComment} />
+            </div>
           )}
           <div className="ci-row" style={guestMode && canComment ? undefined : { display: 'contents' }}>
             <KInput placeholder={canComment ? '댓글 남기기...' : '댓글은 로그인 후'} value={text}
@@ -196,7 +220,8 @@ function RoadviewPageInner() {
   const [itemsAll, setItemsAll, roadLoaded] = useLocalList<RoadItem>('ohome.road.v1', ROAD_SEED);
   // 여러 개로 만든 섹션 (v2.0) — 주소의 ?s= 가 가리키는 것만 보여 준다
   const sec = useSectionParam('roadview');
-  const items = filterSection(itemsAll, sec.id);
+  const sectionItems = filterSection(itemsAll, sec.id);
+  const items = sectionItems.filter(it => it.visibility !== 'private' || isAdmin || it.authorId === user?.id);
   // 저장은 이 섹션 자리만 교체 — 걸러진 목록을 그대로 넘겨도 다른 섹션이 지워지지 않는다
   const setItems = sectionSetter(itemsAll, sec.id, setItemsAll);
   // 댓글은 항목과 따로 저장한다 (v2.0) — 항목 안에 두면 댓글을 달 때 항목을 UPDATE 해야 해서
@@ -223,12 +248,16 @@ function RoadviewPageInner() {
   const [editFor, setEditFor] = useState<RoadItem | null>(null);
   const [eNo, setENo] = useState('');      // 번호 수정 (v1.9 — 제목 없이 번호만 쓰는 체계)
   const [eAdult, setEAdult] = useState(false);
+  const [eSecret, setESecret] = useState(false);
   const [delFor, setDelFor] = useState<RoadItem | null>(null);
+  const [pendingUpload, setPendingUpload] = useState<File | null>(null);
+  const [uploadSecret, setUploadSecret] = useState(false);
   const [youtubeOpen, setYoutubeOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [youtubeSecret, setYoutubeSecret] = useState(false);
 
   // 즉시 업로드 (v1.7) — IndexedDB 실저장 (R2 연동 시 서버로 이전)
-  const upload = async (f: File | undefined) => {
+  const upload = async (f: File | undefined, secretUpload = false) => {
     if (!f) return;
     const imgId = await putBlob(f); // IndexedDB 실저장 — 새로고침에도 유지
     const it: RoadItem = {
@@ -236,8 +265,11 @@ function RoadviewPageInner() {
       date: new Date().toISOString(), imgId, ph: '', ratio: 'auto',
       fold: null, comments: [],
       no: nextNo,   // 번호 자동 부여 (v1.9)
+      visibility: secretUpload ? 'private' : 'public',
     };
     setItems([it, ...items]);
+    setPendingUpload(null);
+    setUploadSecret(false);
     toast(`${padNo(it.no)} 업로드되었습니다`);
   };
 
@@ -248,19 +280,21 @@ function RoadviewPageInner() {
       id: newId(), title: '', author: user!.nickname, authorId: user!.id,
       date: new Date().toISOString(), youtubeId, ph: '', ratio: '16 / 9',
       fold: null, comments: [], no: nextNo,
+      visibility: youtubeSecret ? 'private' : 'public',
     };
     setItems([it, ...items]);
     setYoutubeUrl('');
     setYoutubeOpen(false);
+    setYoutubeSecret(false);
     toast(`${padNo(it.no)} 유튜브 영상이 추가되었습니다`);
   };
 
-  const addComment = (id: string, text: string, guest?: { name: string }) => {
+  const addComment = (id: string, text: string, options: { secret: boolean; folded: boolean }, guest?: { name: string }) => {
     // 게스트 댓글 (방문자 권한, v1.9) — 닉네임+비밀번호, authorId는 빈 값
     const base = { id: newId(), text, date: new Date().toISOString(), target: 'road' as const, targetId: id };
     const c: CommentRow = guest
-      ? { ...base, author: guest.name, authorId: '' }
-      : { ...base, author: user!.nickname, authorId: user!.id };
+      ? { ...base, author: guest.name, authorId: '', ...options }
+      : { ...base, author: user!.nickname, authorId: user!.id, ...options };
     setCmtRows([...cmtRows, c]);
     // 알림 (4.13) — 그림 작성자에게 (본인 댓글 제외)
     const target = items.find(it => it.id === id);
@@ -268,7 +302,7 @@ function RoadviewPageInner() {
       pushNotif({
         type: 'comment', toUserId: target.authorId, href: '/roadview',
         title: `${padNo(target.no)}에 새 댓글`,   // 알림도 번호 기준 (v1.9)
-        body: `${c.author} — ${text.slice(0, 50)}`,
+        body: options.secret ? `${c.author} — 🔒 비밀 댓글` : `${c.author} — ${text.slice(0, 50)}`,
       });
     }
   };
@@ -301,9 +335,9 @@ function RoadviewPageInner() {
           {allow(menuSet.roadUpload) && !!user && (
             <>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
-                onChange={e => { upload(e.target.files?.[0]); e.target.value = ''; }} />
+                onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingUpload(f); setUploadSecret(false); } e.target.value = ''; }} />
               <button className="btn btn-dark" onClick={() => fileRef.current?.click()}
-                {...fileDrop(fl => upload(fl[0]))}>↑ UPLOAD</button>
+                {...fileDrop(fl => { if (fl[0]) { setPendingUpload(fl[0]); setUploadSecret(false); } })}>↑ UPLOAD</button>
               <button className="btn btn-ghost" onClick={() => setYoutubeOpen(true)}>▶ YOUTUBE</button>
             </>
           )}
@@ -316,12 +350,13 @@ function RoadviewPageInner() {
           onEditComment={editComment} onDeleteComment={deleteComment}
           canComment={allow(menuSet.roadComment) && (!!user || menuSet.roadComment === 'guest')}
           guestMode={!user && menuSet.roadComment === 'guest'}
+          viewerId={user?.id} isAdmin={isAdmin}
           editLevel={editLevel} delLevel={delLevel}
           /* authorId 없는 항목 + 비로그인이면 둘 다 undefined라 통과하던 것 (v2.0 발견) —
              손님이 올린 것은 이제 관리자만 손댈 수 있다(손님 확인 수단이 없다) */
           canEditItem={!!it.authorId && it.authorId === user?.id}
           canDeleteItem={isAdmin || (!!it.authorId && it.authorId === user?.id)}
-          onEdit={() => { setEditFor(it); setENo(String(it.no ?? '')); setEAdult(it.fold?.type === 'adult'); }}
+          onEdit={() => { setEditFor(it); setENo(String(it.no ?? '')); setEAdult(it.fold?.type === 'adult'); setESecret(it.visibility === 'private'); }}
           onDelete={() => setDelFor(it)} />
       ))}
       {visible.length === 0 && (
@@ -342,7 +377,8 @@ function RoadviewPageInner() {
           <button className="btn btn-dark" onClick={() => {
             const nv = parseInt(eNo, 10);
             setItems(items.map(x => x.id === editFor!.id
-              ? { ...x, no: Number.isFinite(nv) && nv > 0 ? nv : x.no, fold: eAdult ? { type: 'adult' } : null } : x));
+              ? { ...x, no: Number.isFinite(nv) && nv > 0 ? nv : x.no, fold: eAdult ? { type: 'adult' } : null,
+                visibility: eSecret ? 'private' : 'public' } : x));
             setEditFor(null);
           }}>SAVE</button>
         </>}>
@@ -353,7 +389,17 @@ function RoadviewPageInner() {
               style={{ width: 90, textAlign: 'center' }} />
           </div>
           <KCheck label="수위 주의 접기 (블러 + 클릭 표시)" checked={eAdult} onChange={setEAdult} />
+          <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={eSecret} onChange={setESecret} />
         </div>
+      </Modal>
+
+      <Modal open={pendingUpload !== null} onClose={() => { setPendingUpload(null); setUploadSecret(false); }} small
+        title="로드비 업로드" desc={pendingUpload?.name}
+        actions={<>
+          <button className="btn btn-ghost" onClick={() => { setPendingUpload(null); setUploadSecret(false); }}>CANCEL</button>
+          <button className="btn btn-dark" onClick={() => upload(pendingUpload ?? undefined, uploadSecret)}>UPLOAD</button>
+        </>}>
+        <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={uploadSecret} onChange={setUploadSecret} />
       </Modal>
 
       {/* 삭제 경고 모달 */}
@@ -380,6 +426,9 @@ function RoadviewPageInner() {
         <KInput autoFocus value={youtubeUrl} placeholder="https://youtu.be/..."
           onChange={e => setYoutubeUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') uploadYoutube(); }} />
+        <div style={{ marginTop: 12 }}>
+          <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={youtubeSecret} onChange={setYoutubeSecret} />
+        </div>
       </Modal>
     </section>
   );

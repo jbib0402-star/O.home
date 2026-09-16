@@ -294,6 +294,16 @@ function RoadviewPageInner() {
   // 다음 번호 — 항상 최대+1 자동 증가. 건너뛰기·재배치는 각 그림 편집 모달의 번호 수정으로 (v1.9)
   const nextNo = Math.max(0, ...items.map(it => it.no ?? 0)) + 1;
   const padNo = (n?: number) => `No.${String(n ?? 0).padStart(3, '0')}`;
+  /** 삭제 후 현재 로드비 섹션의 번호만 기존 순서대로 1부터 다시 이어 붙인다. */
+  const compactNumbers = (remaining: RoadItem[]) => {
+    const ordered = [...remaining].sort((a, b) => {
+      const an = a.no ?? Number.MAX_SAFE_INTEGER;
+      const bn = b.no ?? Number.MAX_SAFE_INTEGER;
+      return an === bn ? a.date.localeCompare(b.date) : an - bn;
+    });
+    const numbers = new Map(ordered.map((it, index) => [it.id, index + 1]));
+    return remaining.map(it => ({ ...it, no: numbers.get(it.id) }));
+  };
   const fileRef = useRef<HTMLInputElement>(null);
   const [editFor, setEditFor] = useState<RoadItem | null>(null);
   const [eNo, setENo] = useState('');      // 번호 수정 (v1.9 — 제목 없이 번호만 쓰는 체계)
@@ -462,7 +472,7 @@ function RoadviewPageInner() {
         buttons={[
           { label: 'DELETE', kind: 'accent', onClick: () => {
             const gone = delFor!.id;
-            setItems(items.filter(x => x.id !== gone));
+            setItems(compactNumbers(items.filter(x => x.id !== gone)));
             // 그림에 딸린 댓글도 함께 (v2.0 — 따로 저장이라 남겨 두면 주인 없는 줄이 된다)
             setCmtRows(cmtRows.filter(c => !(c.target === 'road' && c.targetId === gone)));
             setDelFor(null);

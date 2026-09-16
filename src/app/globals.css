@@ -1923,22 +1923,22 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .music-page{max-width:920px}
 .music-list{overflow:hidden;padding:0}
 .music-item+.music-item{border-top:1px solid var(--line)}
-.music-summary{width:100%;display:grid;grid-template-columns:120px minmax(0,1fr) 38px;gap:16px;align-items:center;padding:13px;text-align:left;background:transparent;color:var(--ink);transition:background .18s ease}
+.music-summary{width:100%;display:grid;grid-template-columns:150px minmax(0,1fr) 38px;gap:16px;align-items:center;padding:13px;text-align:left;background:transparent;color:var(--ink);transition:background .18s ease}
 .music-summary:hover,.music-summary:focus-visible{background:var(--soft)}
-.music-summary img{display:block;width:120px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:var(--soft)}
+.music-summary img{display:block;width:150px;aspect-ratio:16/9;object-fit:cover;border-radius:8px;background:var(--soft)}
 .music-copy{min-width:0;display:grid;gap:3px}
 .music-copy b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:calc(14px*var(--fs,1));letter-spacing:.01em}
 .music-copy>span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--sub);font-size:calc(12px*var(--fs,1))}
 .music-copy small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--faint);font-size:calc(11px*var(--fs,1))}
 .music-play{display:grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--ink);color:var(--paper);font-size:11px}
-.music-player{padding:0 13px 13px 149px}
+.music-player{padding:0 13px 13px 179px}
 .music-player iframe{display:block;width:100%;aspect-ratio:16/9;border:0;border-radius:10px;background:#000}
 .music-meta{display:flex;justify-content:space-between;gap:12px;align-items:center;padding-top:8px;color:var(--faint);font-size:calc(10.5px*var(--fs,1))}
 .music-actions{display:flex;gap:9px}.music-actions button{color:var(--accent);font-size:10px;letter-spacing:.08em}
 .music-empty{text-align:center;padding:54px 20px;color:var(--faint);font-size:13px}
 .music-form{display:grid;gap:12px}.music-form label{display:grid;gap:5px}.music-form label>span{color:var(--sub);font-size:9px;letter-spacing:.16em;font-weight:700}
 @media(max-width:620px){
-  .music-summary{grid-template-columns:96px minmax(0,1fr) 30px;gap:11px;padding:10px}
-  .music-summary img{width:96px}.music-play{width:30px;height:30px}
+  .music-summary{grid-template-columns:110px minmax(0,1fr) 30px;gap:11px;padding:10px}
+  .music-summary img{width:110px}.music-play{width:30px;height:30px}
   .music-player{padding:0 10px 10px}.music-copy small{display:none}
 }

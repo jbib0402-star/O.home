@@ -102,7 +102,7 @@ export default function MusicPage() {
                 <img src={`https://i.ytimg.com/vi/${item.youtubeId}/mqdefault.jpg`} alt="" />
                 <span className="music-copy">
                   <b>{item.title}</b>
-                  <span>{item.artist || '아티스트 미입력'}</span>
+                  {item.artist && <span>{item.artist}</span>}
                   {item.note && <small>{item.note}</small>}
                 </span>
                 <span className="music-play" aria-hidden="true">{expanded ? '×' : '▶'}</span>

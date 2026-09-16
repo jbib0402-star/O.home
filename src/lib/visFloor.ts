@@ -42,6 +42,7 @@ const AREA: Record<string, { kind?: SectionKind; href?: string; board?: boolean 
 export function areaHrefOf(coll: string, item: ListItem): string | null {
   const a = AREA[coll];
   if (!a) return null;
+  if (coll === 'roadview' && item.music === true) return '/music';
   if (a.href) return a.href;
   if (a.board) {
     const b = typeof item.boardId === 'string' ? item.boardId : MAIN_BOARD_ID;

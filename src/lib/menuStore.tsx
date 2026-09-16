@@ -18,6 +18,7 @@ export interface MenuLeaf { href: string; label?: string; pageTitle?: string; vi
 export interface MenuGroupNode { id: string; label: string; href?: string; items: MenuLeaf[]; pageTitle?: string; vis?: MenuVis; open?: boolean }
 
 export interface MenuSettings {
+  builtinVersion?: number;           // 새 기본 기능을 기존 트리에 한 번만 배치하는 마이그레이션 버전
   tree?: MenuGroupNode[];            // 자유 메뉴 트리 (v1.9 — 없으면 v1 설정에서 마이그레이션)
   removedBoards: string[];           // 메뉴에서 뺀 추가 게시판 href (자동 배치 제외)
   // v1 유산 — 트리 마이그레이션 재료로만 사용
@@ -38,7 +39,7 @@ export interface MenuSettings {
 export type ImgProtectArea = 'board' | 'comm' | 'tchar' | 'chars' | 'rels';
 
 export const IMG_PROTECT_AREAS: { key: ImgProtectArea; label: string; paths: string[] }[] = [
-  { key: 'board', label: '게시판 (갤러리·로드비 포함)', paths: ['/board', '/gallery', '/loadb'] },
+  { key: 'board', label: '게시판 (갤러리·로드비·음악 포함)', paths: ['/board', '/gallery', '/loadb', '/music'] },
   { key: 'comm', label: '커미션', paths: ['/comm', '/comm-apply'] },
   { key: 'tchar', label: 'TRPG 캐릭터', paths: ['/tchars'] },
   { key: 'chars', label: '자캐 (캐릭터)', paths: ['/chars'] },
@@ -93,6 +94,7 @@ export const PLAYLOG_COLS: { key: string; label: string }[] = [
 ];
 
 export const DEFAULT_MENU_SETTINGS: MenuSettings = {
+  builtinVersion: 1,
   removedBoards: [],
   groupOrder: DEFAULT_MENU.map(m => m.label),
   hidden: [],
@@ -106,6 +108,21 @@ export const DEFAULT_MENU_SETTINGS: MenuSettings = {
 };
 
 const KEY = 'ohome.menuset.v1';
+
+/** v2.1 음악 기능 — 이미 저장된 메뉴에는 로드비 바로 뒤에 한 번만 넣는다. */
+function migrateBuiltins(p: Partial<MenuSettings>): Partial<MenuSettings> {
+  if ((p.builtinVersion ?? 0) >= 1) return p;
+  const tree = p.tree ?? migrateTree(p);
+  if (!tree.some(g => g.href === '/music' || g.items.some(it => it.href === '/music'))) {
+    const boardGroup = tree.find(g => g.items.some(it => it.href === '/loadb'))
+      ?? tree.find(g => g.label === '게시판');
+    if (boardGroup) {
+      const at = boardGroup.items.findIndex(it => it.href === '/loadb');
+      boardGroup.items.splice(at >= 0 ? at + 1 : boardGroup.items.length, 0, { href: '/music' });
+    }
+  }
+  return { ...p, tree, builtinVersion: 1 };
+}
 
 /** 주소를 바꾼 메뉴 (v2.0 사용자 요청) — 옛 이름이 그대로였던 것들 */
 const MOVED: Record<string, string> = { '/roadview': '/loadb', '/backup': '/gallery' };
@@ -147,7 +164,7 @@ export function currentMenuSettings(): MenuSettings {
   try {
     const raw = getRawSetting(KEY);
     if (raw) {
-      const p = moveHrefs(JSON.parse(raw) as Partial<MenuSettings>);
+      const p = migrateBuiltins(moveHrefs(JSON.parse(raw) as Partial<MenuSettings>));
       return { ...DEFAULT_MENU_SETTINGS, ...p, tree: p.tree ?? migrateTree(p) };
     }
   } catch { /* 기본값 */ }
@@ -161,7 +178,8 @@ export function useMenuSettings(): [MenuSettings, (patch: Partial<MenuSettings>)
     try {
       const raw = getRawSetting(KEY);
       if (raw) {
-        const p = moveHrefs(JSON.parse(raw) as Partial<MenuSettings>);
+        const p = migrateBuiltins(moveHrefs(JSON.parse(raw) as Partial<MenuSettings>));
+        try { setSetting(KEY, { ...DEFAULT_MENU_SETTINGS, ...p, tree: p.tree ?? migrateTree(p) }); } catch { /* 무시 */ }
         setSt({
           ...DEFAULT_MENU_SETTINGS,
           ...p,
@@ -174,7 +192,7 @@ export function useMenuSettings(): [MenuSettings, (patch: Partial<MenuSettings>)
     const sync = () => {
       try {
         const raw = getRawSetting(KEY);
-        if (raw) setSt(s => ({ ...s, ...moveHrefs(JSON.parse(raw)) }));
+        if (raw) setSt(s => ({ ...s, ...migrateBuiltins(moveHrefs(JSON.parse(raw))) }));
       } catch { /* 무시 */ }
     };
     window.addEventListener('ohome-menuset', sync);

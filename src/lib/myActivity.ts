@@ -24,7 +24,7 @@ export function collectMyItems(
     ].filter(c => c.authorId === userId)
       .map(c => ({ kind: `${boardName(p)} 댓글`, text: c.text, date: c.date, href: `/board/${p.id}` }))),
     ...roads.filter(it => it.authorId === userId)
-      .map(it => ({ kind: '로드비 그림', text: it.title, date: it.date, href: '/loadb' })),
+      .map(it => ({ kind: it.music ? '음악' : '로드비 그림', text: it.title, date: it.date, href: it.music ? '/music' : '/loadb' })),
     ...roads.flatMap(it => [
       ...it.comments,
       ...cmtRows.filter(c => c.target === 'road' && c.targetId === it.id),

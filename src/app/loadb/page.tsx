@@ -18,31 +18,10 @@ import { pushNotif } from '@/lib/notifStore';
 import { useMenuSettings, MenuPerm } from '@/lib/menuStore';
 import { GuestIdBar } from '@/components/ui/GuestId';
 import { fileDrop } from '@/lib/dnd';
+import { youtubeVideoId } from '@/lib/youtube';
 
 const PAGE_SIZE = 4;
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
-
-/** 일반 영상·단축 URL·Shorts·embed 주소에서 안전한 11자리 영상 ID만 꺼낸다. */
-function youtubeVideoId(value: string): string | null {
-  const raw = value.trim();
-  if (/^[\w-]{11}$/.test(raw)) return raw;
-  try {
-    const url = new URL(/^https?:\/\//i.test(raw) ? raw : `https://${raw}`);
-    const host = url.hostname.replace(/^www\./, '').toLowerCase();
-    let id = '';
-    if (host === 'youtu.be') id = url.pathname.split('/').filter(Boolean)[0] ?? '';
-    else if (host === 'youtube.com' || host === 'm.youtube.com' || host === 'music.youtube.com') {
-      id = url.searchParams.get('v') ?? '';
-      if (!id) {
-        const parts = url.pathname.split('/').filter(Boolean);
-        if (['shorts', 'embed', 'live'].includes(parts[0] ?? '')) id = parts[1] ?? '';
-      }
-    }
-    return /^[\w-]{11}$/.test(id) ? id : null;
-  } catch {
-    return null;
-  }
-}
 
 function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;

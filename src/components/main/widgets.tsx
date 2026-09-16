@@ -204,6 +204,7 @@ export function LatestWidget() {
   const seeGal = canViewHref(menuSet, '/gallery', viewer);
   const latest = [
     ...(seeRoad ? roads : [])
+      .filter(it => !it.music)
       .filter(it => canViewHref(menuSet, sectionHref('roadview', it.secId ?? MAIN_SEC), viewer))
       .filter(it => it.visibility !== 'private' || isAdmin || it.authorId === user?.id)
       .filter(it => !it.secret || isAdmin || it.authorId === user?.id)

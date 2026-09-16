@@ -17,6 +17,9 @@ export interface RoadItem {
   imgUrl?: string;           // (구) URL — 새 업로드는 imgId 사용
   imgId?: string;            // IndexedDB 파일 id (blobStore — 새로고침에도 유지)
   youtubeId?: string;        // 유튜브 영상 ID — 링크는 저장 전에 정규화
+  music?: boolean;           // 음악 게시판 항목 — 로드비와 같은 저장소를 쓰되 화면은 분리
+  artist?: string;           // 음악 게시판 아티스트
+  note?: string;             // 음악 게시판 짧은 메모
   ph: string;                // 데모 플레이스홀더 클래스
   narrow?: boolean;          // 원본 가로가 좁은 이미지 (가운데 정렬)
   ratio: string;             // aspect-ratio 값

@@ -173,7 +173,13 @@ function CharDetailInner() {
     return () => setPageTheme(null);
   }, [pageColor, setPageTheme]);
 
-  const curTab = eff?.tabs.find(t => t.id === tab);
+  // 비공개 추가 탭은 관리자·캐릭터 편집 권한자만 탐색하거나 내용을 열 수 있다.
+  // 기존 탭은 visibility가 없으므로 공개로 간주한다.
+  const visibleTabs = useMemo(
+    () => eff?.tabs.filter(t => t.visibility !== 'private' || canEdit) ?? [],
+    [eff?.tabs, canEdit],
+  );
+  const curTab = visibleTabs.find(t => t.id === tab);
   const tabHtml = useMemo(
     () => (loaded && curTab ? sanitizeHtml(curTab.html) : ''),
     [loaded, curTab],
@@ -294,9 +300,11 @@ function CharDetailInner() {
               <div className="side-icon-group">
                 <span className="side-icon-label">INFO</span>
                 <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" aria-label="기본 정보" onClick={() => pickTab('basic')}>☰</button>
-                {eff.tabs.map(t => (
-                  <button key={t.id} className={tab === t.id ? 'on' : ''} data-tip={t.title || '추가 프로필'}
-                    aria-label={t.title || '추가 프로필'} onClick={() => pickTab(t.id)}>{t.icon}</button>
+                {visibleTabs.map(t => (
+                  <button key={t.id} className={`${tab === t.id ? 'on ' : ''}${t.visibility === 'private' ? 'side-tab-private' : ''}`}
+                    data-tip={`${t.title || '추가 프로필'}${t.visibility === 'private' ? ' · 비공개' : ''}`}
+                    aria-label={`${t.title || '추가 프로필'}${t.visibility === 'private' ? ' 비공개' : ''}`}
+                    onClick={() => pickTab(t.id)}>{t.icon}{t.visibility === 'private' && <span aria-hidden="true">🔒</span>}</button>
                 ))}
               </div>
             </>

@@ -15,6 +15,8 @@ export interface CharTab {
   title: string;
   subtitle?: string;     // 제목 아래 작은 글씨 (선택)
   html: string;          // HTML 에디터 내용 (스크립트 불허 — 렌더 시 sanitize)
+  /** 추가 프로필 탭 공개범위. 구형 데이터(undefined)는 공개로 처리한다. */
+  visibility?: 'public' | 'private';
 }
 
 export interface Character {

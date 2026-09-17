@@ -305,6 +305,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
           <div key={t.id} style={{ display: 'flex', gap: 8, alignItems: 'center', border: '1.5px solid var(--line)', borderRadius: 8, padding: '8px 10px' }}>
             <span style={{ width: 28, height: 28, borderRadius: 8, background: '#eef0f2', display: 'grid', placeItems: 'center', fontSize: 14, flexShrink: 0 }}>{t.icon}</span>
             <b style={{ fontSize: 13, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.title || '(제목 없음)'}</b>
+            <span className={`pill ${t.visibility === 'private' ? 'dark' : ''}`} style={{ flexShrink: 0 }}>
+              {t.visibility === 'private' ? '비공개' : '공개'}
+            </span>
             {t.subtitle && <small style={{ color: 'var(--faint)', fontSize: 10.5, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{t.subtitle}</small>}
             <small style={{ color: 'var(--faint)', fontSize: 10.5, flexShrink: 0 }}>{t.html ? `${t.html.length.toLocaleString()}자` : '비어 있음'}</small>
             <button className="btn btn-dark" style={{ marginLeft: 'auto', height: 27, padding: '0 12px', fontSize: 11 }}
@@ -315,7 +318,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
         <button className="btn btn-ghost" style={addBtn}
           onClick={() => {
             const id = newId();
-            setTabs(l => [...l, { id, icon: '✦', title: '', html: '' }]);
+            setTabs(l => [...l, { id, icon: '✦', title: '', html: '', visibility: 'public' }]);
             setView(id); // 바로 전용 편집 화면으로
           }}>＋ ADD TAB</button>
 
@@ -432,6 +435,18 @@ function TabEditView({ tab, onChange, onDelete, onBack }: {
         <b style={{ fontSize: 14 }}>탭 편집</b>
         <span className="hint" style={{ margin: 0 }}>이 화면의 내용은 프로필 [SAVE] 시 함께 저장됩니다</span>
         <button className="btn btn-ghost" style={{ marginLeft: 'auto', fontSize: 11 }} onClick={onDelete}>탭 삭제</button>
+      </div>
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <span className="k-label" style={{ margin: 0 }}>탭 공개범위</span>
+        <div className="mini-seg">
+          <button className={tab.visibility !== 'private' ? 'on' : ''}
+            onClick={() => onChange({ visibility: 'public' })}>공개</button>
+          <button className={tab.visibility === 'private' ? 'on' : ''}
+            onClick={() => onChange({ visibility: 'private' })}>비공개</button>
+        </div>
+        <span className="hint" style={{ margin: 0 }}>
+          {tab.visibility === 'private' ? '관리자와 캐릭터 편집 권한자만 볼 수 있습니다.' : '프로필 열람 권한이 있는 모두에게 표시됩니다.'}
+        </span>
       </div>
       {/* 아이콘 + Title/Subtitle 한 줄 — Subtitle은 제목 아래 작은 글씨 (없으면 표시 안 됨) */}
       <div style={{ display: 'flex', gap: 8 }}>

@@ -989,6 +989,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .side-icons button{width:46px;height:46px;border-radius:12px;background:var(--tab-bg,rgba(255,255,255,.08));color:var(--tab-fg,#aab0ba);font-size:calc(19px*var(--fs,1));display:grid;place-items:center;padding-bottom:4px;border:1px solid var(--line-dark);transition:.18s} /* 딩벳 글리프 아래 쏠림 보정 (v1.9 실측 — 사용자 미세조정 +1) */
 .side-icons button:hover{color:var(--tab-on-fg,#fff);background:var(--tab-on-bg,rgba(255,255,255,.16));opacity:.85}
 .side-icons button.on{background:var(--tab-on-bg,var(--panel-solid));color:var(--tab-on-fg,var(--ink));border-color:color-mix(in srgb,var(--accent) 62%,var(--line));box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 18%,transparent);opacity:1}
+.side-icons .side-tab-private{position:relative}.side-icons .side-tab-private>span{position:absolute;right:4px;top:3px;font-size:9px;line-height:1}
 .side-icons .side-au-button{position:relative;overflow:hidden;padding:0}
 .side-au-face{position:absolute;inset:4px;border-radius:9px;overflow:hidden;display:grid;place-items:center;font-family:var(--serif);font-size:calc(13px*var(--fs,1));line-height:1}
 .side-au-face b{position:relative;z-index:1}

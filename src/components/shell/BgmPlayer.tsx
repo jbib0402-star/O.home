@@ -40,12 +40,16 @@ interface YTPlayer {
   cueVideoById: (id: string) => void;
   playVideo: () => void;
   pauseVideo: () => void;
+  stopVideo: () => void;
+  getCurrentTime: () => number;
+  getDuration: () => number;
+  seekTo: (seconds: number, allowSeekAhead: boolean) => void;
   setVolume: (v: number) => void;
   destroy: () => void;
 }
 declare global {
   interface Window {
-    YT?: { Player: new (el: HTMLElement, opts: unknown) => YTPlayer; PlayerState: { ENDED: number } };
+    YT?: { Player: new (el: HTMLElement, opts: unknown) => YTPlayer; PlayerState: { ENDED: number; PLAYING: number; PAUSED: number } };
     onYouTubeIframeAPIReady?: () => void;
   }
 }

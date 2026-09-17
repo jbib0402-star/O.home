@@ -20,6 +20,7 @@ export interface RoadItem {
   music?: boolean;           // 음악 게시판 항목 — 로드비와 같은 저장소를 쓰되 화면은 분리
   artist?: string;           // 음악 게시판 아티스트
   note?: string;             // 음악 게시판 짧은 메모
+  musicOrder?: number;       // 음악 게시판 재생 순서
   ph: string;                // 데모 플레이스홀더 클래스
   narrow?: boolean;          // 원본 가로가 좁은 이미지 (가운데 정렬)
   ratio: string;             // aspect-ratio 값

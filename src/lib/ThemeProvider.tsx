@@ -7,7 +7,8 @@
 import React, { createContext, useContext, useEffect, useMemo, useState, useCallback } from 'react';
 import {
   ThemeMode, PointTone, ThemeVars, ThemeState, ThemeStore, ThemePreset,
-  DARK_THEME, DEFAULT_THEME_STORE, defaultVarsFor, derivePointTheme, themeToCssVars,
+  DARK_THEME, LIGHT_THEME, DEFAULT_THEME_STORE, THEME_PALETTE_VERSION,
+  defaultVarsFor, derivePointTheme, themeToCssVars,
 } from './theme';
 import { newId } from './postStore';
 import { getBlob } from './blobStore';
@@ -45,16 +46,58 @@ const LEGACY_KEY = 'ohome.theme.v1';
 const CSS_KEY = 'ohome.themeCss.v1';
 const PRESET_KEY = 'ohome.themePresets.v1';
 
-const normalize = (s: Partial<ThemeStore> | null | undefined): ThemeStore => ({
-  ...DEFAULT_THEME_STORE,
-  ...(s ?? {}),
-  perMode: {
-    light: { ...DEFAULT_THEME_STORE.perMode.light, ...(s?.perMode?.light ?? {}) },
-    dark: { ...DEFAULT_THEME_STORE.perMode.dark, ...(s?.perMode?.dark ?? {}) },
-    point: { ...DEFAULT_THEME_STORE.perMode.point, ...(s?.perMode?.point ?? {}) },
-    custom: { ...DEFAULT_THEME_STORE.perMode.custom, ...(s?.perMode?.custom ?? {}) },
-  },
-});
+/**
+ * 팔레트 교체 시에도 배경 이미지·헤더 표시·모서리 같은 "배치/표시 취향"은 유지한다.
+ * 색 관련 값은 새 세이지 팔레트로 바꾸되 사용자가 올린 배경이나 UI 형태는 잃지 않게 한다.
+ */
+function keepDisplayPrefs(palette: ThemeVars, prev?: ThemeVars): ThemeVars {
+  if (!prev) return { ...palette };
+  return {
+    ...palette,
+    bgType: prev.bgType ?? palette.bgType,
+    bgAngle: prev.bgAngle ?? palette.bgAngle,
+    bgImageId: prev.bgImageId,
+    bgBlur: prev.bgBlur ?? palette.bgBlur,
+    pageHead: prev.pageHead ?? palette.pageHead,
+    pageHeadM: prev.pageHeadM ?? palette.pageHeadM,
+    radius: prev.radius ?? palette.radius,
+    radiusS: prev.radiusS ?? palette.radiusS,
+    focusRing: prev.focusRing ?? palette.focusRing,
+    focusW: prev.focusW ?? palette.focusW,
+    wgBorder: prev.wgBorder ?? palette.wgBorder,
+  };
+}
+
+const normalize = (s: Partial<ThemeStore> | null | undefined): ThemeStore => {
+  // 저장본에 버전 필드가 없으면 이전 회색/적색 팔레트다. 새 팔레트로 한 번만 전환한다.
+  const needsPaletteMigration = !!s && (s.paletteVersion ?? 0) < THEME_PALETTE_VERSION;
+  const base: ThemeStore = {
+    ...DEFAULT_THEME_STORE,
+    ...(s ?? {}),
+    perMode: {
+      light: { ...DEFAULT_THEME_STORE.perMode.light, ...(s?.perMode?.light ?? {}) },
+      dark: { ...DEFAULT_THEME_STORE.perMode.dark, ...(s?.perMode?.dark ?? {}) },
+      point: { ...DEFAULT_THEME_STORE.perMode.point, ...(s?.perMode?.point ?? {}) },
+      custom: { ...DEFAULT_THEME_STORE.perMode.custom, ...(s?.perMode?.custom ?? {}) },
+    },
+  };
+  if (!needsPaletteMigration) return base;
+
+  const prev = base.perMode[base.mode];
+  const light = keepDisplayPrefs(LIGHT_THEME, prev);
+  return {
+    ...base,
+    paletteVersion: THEME_PALETTE_VERSION,
+    mode: 'light',
+    pointTone: 'light',
+    pointAccent: LIGHT_THEME.accent,
+    perMode: {
+      ...base.perMode,
+      light,
+      custom: { ...light },
+    },
+  };
+};
 
 function applyToDom(vars: ThemeVars) {
   const css = themeToCssVars(vars);
@@ -68,7 +111,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [presets, setPresets] = useState<ThemePreset[]>([]);
   const [pageColor, setPageColor] = useState<{ color: string; tone?: PointTone } | null>(null);
   const [pageBg, setPageBgState] = useState<PageBg | null>(null);   // 자관별 배경 (v2.0)
-  const [loaded, setLoaded] = useState(false);   // 저장본 로드 전 기본 다크를 DOM에 쓰지 않기 (FOUC 방지)
+  const [loaded, setLoaded] = useState(false);   // 저장본 로드 전 기본 팔레트를 DOM에 덮어쓰지 않기 (FOUC 방지)
 
   // 최초 로드 — v2 우선, 없으면 v1 마이그레이션 (기존 vars를 해당 모드의 수정본으로 승계)
   useEffect(() => {
@@ -102,7 +145,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // 드래프트 변경 시 DOM 즉시 반영 (미리보기) — 저장은 save()에서만.
-  // 로드 전에는 건드리지 않음 — 첫 페인트의 인라인 FOUC 맵을 기본 다크로 덮어써 깜빡이는 것 방지 (v1.9)
+  // 로드 전에는 건드리지 않음 — 첫 페인트의 인라인 FOUC 맵을 기본 테마로 덮어써 깜빡이는 것 방지 (v1.9)
   useEffect(() => {
     if (!loaded) return;
     applyToDom(pageColor

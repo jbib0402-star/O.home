@@ -7,6 +7,9 @@ import { adjust, hexToHsl, hslToHex, withAlpha } from './color';
 export type ThemeMode = 'light' | 'dark' | 'point' | 'custom';
 export type PointTone = 'dark' | 'light';
 
+/** 2026-09 세이지/연두 팔레트 전환 버전 — 저장된 구 팔레트의 1회 마이그레이션 판별용 */
+export const THEME_PALETTE_VERSION = 1;
+
 /** 환경설정에서 항목별로 제어되는 테마 변수 (5.1 상세 설정 항목) */
 export interface ThemeVars {
   // 배경 그라데이션 (시작색 → 끝색)
@@ -90,23 +93,26 @@ export const DARK_THEME: ThemeVars = {
   radius: 14, radiusS: 9, shadow: 100, ddShadow: 100,
 };
 
-/** 라이트 모드 — 호버 글씨색은 흰 배경에서도 보이는 색 (v1.9) */
+/** 라이트 모드 — 업로드 참고 이미지의 밝은 아이보리·세이지·연두 팔레트 */
 export const LIGHT_THEME: ThemeVars = {
-  bgG1: '#f2f3f5', bgG2: '#dfe1e6',
+  bgG1: '#f7fbed', bgG2: '#eaf1e1',
   bgType: 'gradient', bgAngle: 180, bgBlur: 0,
-  cardBg: '#fbfbfc', cardFg: '#1d2025',
-  topBg: '#fbfbfc', topFg: '#5d636d', topHv: '#a63a45', topBrand: '#2b3038',
-  ddBg: '#ffffff', ddFg: '#3c434d', ddHv: '#000000',
-  pageTitle: '#2b3038', pageDesc: '#7a8089',
-  bgmBg: '#ffffff', bgmFg: '#2b3038', bgmIc: '#5d636d', bgmVol: '#3c434d',
-  sbThumb: '#b8bcc4', sbBd: '#e2e4e8',
-  searchBg: '#ffffff', searchFg: '#2b3038', searchIc: '#8a9099', searchBd: '#d7dae0', // 라이트에서 또렷하게
-  btnDark: '#5d636d', btnDarkFg: '#ffffff', btnDarkHv: '#6d7480', // 라이트는 뮤트 슬레이트 — 검정이면 대비 과함 (사용자 피드백)
-  memoBoard: '#e7e9ee', memoBoardBd: '#d4d7de', // 흰 카드와 구분되는 밝은 회색 판 (v1.9)
-  tabBg: '#e4e6eb', tabFg: '#6a7078', tabOnBg: '#ffffff', tabOnFg: '#1d2025',
-  cropBg: '#e2e5ea', // 라이트 — 투명 이미지가 보이는 밝은 판 (v1.9)
-  accent: '#a63a45', accentSoft: '#c96a73',
-  radius: 14, radiusS: 9, shadow: 30, ddShadow: 30, // 밝은 배경에선 그림자를 약하게 (사용자 확정 30%)
+  cardBg: '#fbfcf8', cardFg: '#425344',
+  topBg: '#f3f7e7', topFg: '#70836f', topHv: '#5f805f', topBrand: '#557055',
+  ddBg: '#fbfcf8', ddFg: '#526553', ddHv: '#8fb38c',
+  pageTitle: '#557055', pageDesc: '#81917e',
+  bgmBg: '#f3f7e7', bgmFg: '#4f6450', bgmIc: '#789078', bgmVol: '#6c856d',
+  sbThumb: '#a5c696', sbBd: '#eaf1e1',
+  searchBg: '#fbfcf8', searchFg: '#455847', searchIc: '#8da18b', searchBd: '#c9d9c1',
+  btnDark: '#5f805f', btnDarkFg: '#ffffff', btnDarkHv: '#557355',
+  memoBoard: '#eaf1e1', memoBoardBd: '#c2d8b4',
+  tabBg: '#eaf1e1', tabFg: '#708370', tabOnBg: '#fbfcf8', tabOnFg: '#425344',
+  segBg: '#eaf1e1', segFg: '#7c8f7b',
+  wgBg: '#fbfcf8', wgTitle: '#839582', wgFg: '#425344', wgBd: '#d7e3cf',
+  cropBg: '#eaf1e1',
+  focusColor: '#8fb38c', focusRing: 'glow', focusW: 3,
+  accent: '#62845f', accentSoft: '#a5c696',
+  radius: 14, radiusS: 9, shadow: 18, ddShadow: 16, shColor: '#80927c',
 };
 
 /**
@@ -173,6 +179,7 @@ export interface ThemeStore {
   pointTone: PointTone;
   pointAccent: string;                     // 포인트 자동 기준색 (변경 시에만 재파생)
   perMode: Record<ThemeMode, ThemeVars>;   // 각 모드의 수정본 — 탭을 바꿔도 유지
+  paletteVersion?: number;                 // 기본 사이트 팔레트 마이그레이션 버전
 }
 
 /** 모드별 초기값 (선택 리셋용) */
@@ -181,17 +188,17 @@ export function defaultVarsFor(mode: ThemeMode, accent: string, tone: PointTone)
     case 'light': return LIGHT_THEME;
     case 'dark': return DARK_THEME;
     case 'point': return derivePointTheme(accent, tone);
-    case 'custom': return DARK_THEME; // 커스텀 초기 상태 = 기본(다크)
+    case 'custom': return LIGHT_THEME; // 커스텀 초기 상태도 현재 사이트 기본 팔레트에서 시작
   }
 }
 
 export const DEFAULT_THEME_STORE: ThemeStore = {
-  mode: 'dark', pointTone: 'dark', pointAccent: '#a63a45',
+  mode: 'light', pointTone: 'light', pointAccent: '#62845f', paletteVersion: THEME_PALETTE_VERSION,
   perMode: {
     light: LIGHT_THEME,
     dark: DARK_THEME,
-    point: derivePointTheme('#a63a45', 'dark'),
-    custom: DARK_THEME,
+    point: derivePointTheme('#62845f', 'light'),
+    custom: LIGHT_THEME,
   },
 };
 

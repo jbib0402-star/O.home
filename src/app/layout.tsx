@@ -22,6 +22,9 @@ import { PageFrame } from '@/lib/pageRefresh';
 import { MenuGuard } from '@/components/shell/MenuGuard';
 import { ServerBoot } from '@/components/shell/ServerBoot';
 import { siteMeta } from '@/lib/siteMeta';
+import { LIGHT_THEME, THEME_PALETTE_VERSION, themeToCssVars } from '@/lib/theme';
+
+const DEFAULT_THEME_CSS = themeToCssVars(LIGHT_THEME);
 
 /**
  * 링크를 미리 읽어 가는 쪽(카톡·디스코드·검색)은 서버가 돌려준 HTML만 본다.
@@ -48,14 +51,14 @@ export async function generateMetadata(): Promise<Metadata> {
 // Vercel 프로젝트 Settings > Functions > Function Region에서 직접 지정 후 재배포해야 한다(설치 안내 2-B ④).
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const defaultThemeCss = JSON.stringify(DEFAULT_THEME_CSS);
   return (
     <html lang="ko">
       <head>
-        {/* 테마 FOUC 방지 — <body> 안에 있으면 body 배경이 :root의 다크 기본값으로 먼저 페인트될 여지가
-            있다(사용자 발견 — "처음 접속할 때 기본 다크모드가 깜빡") — body 자체가 파싱되는 순간 CSS만으로도
-            그려질 수 있기 때문. <head> 맨 앞으로 옮겨 렌더 차단 구간(첫 페인트 전) 안에서 먼저 실행되게 한다 (v2.0) */}
+        {/* 테마 FOUC 방지 — 저장 캐시가 없거나 구 팔레트 캐시라면 첫 페인트부터 새 세이지 라이트 팔레트를 쓴다.
+            새 버전으로 저장된 커스텀 테마가 있으면 기존 캐시를 그대로 존중한다. */}
         <script dangerouslySetInnerHTML={{
-          __html: `(function(){try{var m=JSON.parse(localStorage.getItem('ohome.themeCss.v1'));if(m){var s=document.documentElement.style;for(var k in m)s.setProperty(k,m[k]);}}catch(e){}})();`,
+          __html: `(function(){try{var t=JSON.parse(localStorage.getItem('ohome.theme.v2'));var m=JSON.parse(localStorage.getItem('ohome.themeCss.v1'));if(!t||((t.paletteVersion||0)<${THEME_PALETTE_VERSION}))m=${defaultThemeCss};if(!m)m=${defaultThemeCss};var s=document.documentElement.style;for(var k in m)s.setProperty(k,m[k]);}catch(e){}})();`,
         }} />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link

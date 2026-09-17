@@ -47,6 +47,8 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
       || b.date.localeCompare(a.date));
   const setItems = temporary ? setAll : sectionSetter(all, MUSIC_SEC, setAll);
   const [query, setQuery] = useState('');
+  const [quickUrl, setQuickUrl] = useState('');
+  const [quickAdding, setQuickAdding] = useState(false);
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
   const [ready, setReady] = useState(false);
@@ -214,6 +216,35 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
   const repeatLabel = repeat === 'one' ? '한 곡 반복' : repeat === 'all' ? '전체 반복' : '반복 없음';
 
   const startAdd = () => { setEditing(null); setDraft(EMPTY); setModalOpen(true); };
+  const addFromLink = async () => {
+    if (quickAdding) return;
+    const youtubeId = youtubeVideoId(quickUrl);
+    if (!youtubeId) { toast('올바른 유튜브 영상 링크를 입력해 주세요'); return; }
+    if (items.some(item => item.youtubeId === youtubeId)) { toast('이미 재생목록에 있는 노래입니다'); return; }
+    setQuickAdding(true);
+    try {
+      const response = await fetch(`/api/youtube-meta?id=${encodeURIComponent(youtubeId)}`);
+      const meta = response.ok ? await response.json() as { title?: string; author?: string } : {};
+      const expiresAt = temporary
+        ? (quickMeta.expiresAt ?? new Date(Date.now() + DAY).toISOString())
+        : undefined;
+      const item: RoadItem = {
+        id: newId(), ...(temporary ? {} : { secId: MUSIC_SEC }), music: true, musicOrder: items.length,
+        title: meta.title?.trim() || 'YouTube 영상', artist: meta.author?.trim() || '', note: '', youtubeId,
+        author: user!.nickname, authorId: user!.id, date: new Date().toISOString(),
+        ph: '', ratio: '16 / 9', fold: null, comments: [], visibility: 'public',
+      };
+      setItems([...items.map((it, index) => ({ ...it, musicOrder: index })), item]);
+      if (temporary && expiresAt !== quickMeta.expiresAt) saveQuickMeta({ ...quickMeta, expiresAt });
+      if (!currentId) setCurrentId(item.id);
+      setQuickUrl('');
+      toast('링크를 재생목록에 추가했습니다');
+    } catch {
+      toast('곡 정보를 불러오지 못했습니다. 잠시 후 다시 시도해 주세요');
+    } finally {
+      setQuickAdding(false);
+    }
+  };
   const startEdit = (item: RoadItem) => {
     setEditing(item);
     setDraft({ url: item.youtubeId ? `https://youtu.be/${item.youtubeId}` : '', title: item.title, artist: item.artist ?? '', note: item.note ?? '' });
@@ -301,6 +332,17 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
       </div>
 
       <div className="panel music-list">
+        {canAdd && <form className="music-quick-add" onSubmit={e => { e.preventDefault(); void addFromLink(); }}>
+          <label htmlFor="music-quick-url">YOUTUBE LINK</label>
+          <div>
+            <KInput id="music-quick-url" value={quickUrl} placeholder="유튜브 영상 주소를 붙여넣으세요"
+              onChange={e => setQuickUrl(e.target.value)} />
+            <button className="btn btn-dark" type="submit" disabled={quickAdding || !quickUrl.trim()}>
+              {quickAdding ? '불러오는 중…' : '올리기'}
+            </button>
+          </div>
+          <small>링크만 넣으면 제목과 채널명이 자동으로 등록됩니다.</small>
+        </form>}
         <div className="music-list-head">
           <div><b>PLAYLIST</b><span>{items.length} SONGS</span></div>
           <div className="music-list-tools">

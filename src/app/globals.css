@@ -1966,3 +1966,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .music-summary img{width:110px}.music-playing-badge,.music-row-date{display:none}.music-actions{padding-left:8px;flex-direction:column;gap:5px}
   .music-copy small{display:none}.music-volume input{width:68px}.music-modes{flex-wrap:wrap}
 }
+
+/* 관리자용 24시간 임시 플레이리스트 */
+.quick-music-page{position:relative;isolation:isolate}
+.quick-music-page::before{content:"";position:fixed;inset:var(--top-h) 0 0;z-index:-2;background:var(--quick-bg,none) center/cover no-repeat;opacity:.28}
+.quick-music-page::after{content:"";position:fixed;inset:var(--top-h) 0 0;z-index:-1;background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 72%,transparent),color-mix(in srgb,var(--paper) 90%,transparent))}
+.quick-music-page .music-deck,.quick-music-page .music-list{backdrop-filter:blur(13px);box-shadow:0 16px 45px rgba(22,35,27,.12)}
+.quick-expiry{margin:4px 0 0;color:var(--accent);font-size:10px;font-weight:700;letter-spacing:.1em;font-variant-numeric:tabular-nums}
+.quick-denied{max-width:520px;margin:80px auto;padding:48px;text-align:center;color:var(--faint)}

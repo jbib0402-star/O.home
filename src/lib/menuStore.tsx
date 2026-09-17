@@ -57,7 +57,7 @@ export function imgProtectAreaFor(pathname: string): ImgProtectArea | null {
 /** 기본 트리 — DEFAULT_MENU 구조 그대로 */
 export function defaultTree(): MenuGroupNode[] {
   return DEFAULT_MENU.map(m => m.children
-    ? { id: `g-${m.label}`, label: m.label, items: m.children.map(c => ({ href: c.href })) }
+    ? { id: `g-${m.label}`, label: m.label, items: m.children.map(c => ({ href: c.href, ...(c.vis ? { vis: c.vis } : {}) })) }
     : { id: `g-${m.label}`, label: m.label, href: m.href, items: [] });
 }
 
@@ -76,7 +76,7 @@ function migrateTree(p: Partial<MenuSettings>): MenuGroupNode[] {
       ? {
         id: `g-${m.label}`, label: labels[m.label] ?? m.label,
         items: m.children.filter(c => !hidden.includes(c.href))
-          .map(c => ({ href: c.href, ...(labels[c.href] ? { label: labels[c.href] } : {}) })),
+          .map(c => ({ href: c.href, ...(c.vis ? { vis: c.vis } : {}), ...(labels[c.href] ? { label: labels[c.href] } : {}) })),
       }
       : { id: `g-${m.label}`, label: labels[m.label] ?? m.label, href: m.href, items: [] });
 }
@@ -94,7 +94,7 @@ export const PLAYLOG_COLS: { key: string; label: string }[] = [
 ];
 
 export const DEFAULT_MENU_SETTINGS: MenuSettings = {
-  builtinVersion: 1,
+  builtinVersion: 2,
   removedBoards: [],
   groupOrder: DEFAULT_MENU.map(m => m.label),
   hidden: [],
@@ -109,11 +109,12 @@ export const DEFAULT_MENU_SETTINGS: MenuSettings = {
 
 const KEY = 'ohome.menuset.v1';
 
-/** v2.1 음악 기능 — 이미 저장된 메뉴에는 로드비 바로 뒤에 한 번만 넣는다. */
+/** 새 기본 기능 — 이미 저장된 메뉴에는 각 버전마다 한 번만 넣는다. */
 function migrateBuiltins(p: Partial<MenuSettings>): Partial<MenuSettings> {
-  if ((p.builtinVersion ?? 0) >= 1) return p;
+  const version = p.builtinVersion ?? 0;
+  if (version >= 2) return p;
   const tree = p.tree ?? migrateTree(p);
-  if (!tree.some(g => g.href === '/music' || g.items.some(it => it.href === '/music'))) {
+  if (version < 1 && !tree.some(g => g.href === '/music' || g.items.some(it => it.href === '/music'))) {
     const boardGroup = tree.find(g => g.items.some(it => it.href === '/loadb'))
       ?? tree.find(g => g.label === '게시판');
     if (boardGroup) {
@@ -121,7 +122,16 @@ function migrateBuiltins(p: Partial<MenuSettings>): Partial<MenuSettings> {
       boardGroup.items.splice(at >= 0 ? at + 1 : boardGroup.items.length, 0, { href: '/music' });
     }
   }
-  return { ...p, tree, builtinVersion: 1 };
+  if (version < 2 && !tree.some(g => g.href === '/quick-music' || g.items.some(it => it.href === '/quick-music'))) {
+    const boardGroup = tree.find(g => g.items.some(it => it.href === '/music'))
+      ?? tree.find(g => g.label === '게시판');
+    if (boardGroup) {
+      const at = boardGroup.items.findIndex(it => it.href === '/music');
+      boardGroup.items.splice(at >= 0 ? at + 1 : boardGroup.items.length, 0,
+        { href: '/quick-music', vis: 'admin' });
+    }
+  }
+  return { ...p, tree, builtinVersion: 2 };
 }
 
 /** 주소를 바꾼 메뉴 (v2.0 사용자 요청) — 옛 이름이 그대로였던 것들 */

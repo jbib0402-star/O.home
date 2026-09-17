@@ -5,7 +5,7 @@
 export interface MenuItem {
   label: string;
   href?: string;             // 하위가 없는 단독 메뉴
-  children?: { label: string; href: string }[];
+  children?: { label: string; href: string; vis?: 'all' | 'member' | 'admin' }[];
 }
 
 /** 배치 가능한 기능(모듈) 전체 — href → 기본 이름. 메뉴 트리에 넣어야 노출됨 (3장 메뉴 선택제) */
@@ -17,6 +17,7 @@ export const FEATURES: { href: string; label: string }[] = [
   { href: '/gallery', label: '갤러리' },
   { href: '/loadb', label: '로드비' },
   { href: '/music', label: '음악' },
+  { href: '/quick-music', label: '24H 플레이리스트' },
   { href: '/tchars', label: '캐릭터' },   // TRPG 캐릭터 — 자놀 캐릭터와는 href로 구분
   { href: '/trpg', label: '로그 백업' },
   { href: '/dotori', label: '도토리' },
@@ -47,6 +48,7 @@ export const DEFAULT_MENU: MenuItem[] = [
       { label: '갤러리', href: '/gallery' },
       { label: '로드비', href: '/loadb' },
       { label: '음악', href: '/music' },
+      { label: '24H 플레이리스트', href: '/quick-music', vis: 'admin' },
     ],
   },
   {

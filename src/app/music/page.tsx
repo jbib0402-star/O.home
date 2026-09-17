@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties } from 'react';
 import { useAuth } from '@/lib/auth';
 import { RoadItem, ROAD_SEED } from '@/lib/galleryStore';
 import { useLocalList, newId, fmtDate } from '@/lib/postStore';
@@ -11,8 +12,13 @@ import { KInput, KTextarea, SearchBar } from '@/components/ui/Kit';
 import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useToast } from '@/components/ui/Toast';
+import { putBlob, useBlobUrl } from '@/lib/blobStore';
 
 const MUSIC_SEC = '__music__';
+const QUICK_KEY = 'ohome.quickmusic.v1';
+const QUICK_META_KEY = 'ohome.quickmusic.meta.v1';
+const DAY = 24 * 60 * 60 * 1000;
+type QuickMeta = { title: string; bgId?: string; expiresAt?: string };
 type Draft = { url: string; title: string; artist: string; note: string };
 type RepeatMode = 'none' | 'one' | 'all';
 type YTState = { data: number };
@@ -30,15 +36,16 @@ const clock = (seconds: number) => {
   return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 };
 
-export default function MusicPage() {
+export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) {
   const { user, isAdmin } = useAuth();
   const toast = useToast();
   const [menuSet] = useMenuSettings();
-  const [all, setAll] = useLocalList<RoadItem>('ohome.road.v1', ROAD_SEED);
-  const items = filterSection(all, MUSIC_SEC).filter(it => it.music && !!it.youtubeId)
+  const [all, setAll] = useLocalList<RoadItem>(temporary ? QUICK_KEY : 'ohome.road.v1', ROAD_SEED);
+  const source = temporary ? all : filterSection(all, MUSIC_SEC);
+  const items = source.filter(it => it.music && !!it.youtubeId)
     .sort((a, b) => (a.musicOrder ?? Number.MAX_SAFE_INTEGER) - (b.musicOrder ?? Number.MAX_SAFE_INTEGER)
       || b.date.localeCompare(a.date));
-  const setItems = sectionSetter(all, MUSIC_SEC, setAll);
+  const setItems = temporary ? setAll : sectionSetter(all, MUSIC_SEC, setAll);
   const [query, setQuery] = useState('');
   const [currentId, setCurrentId] = useState<string | null>(null);
   const [playing, setPlaying] = useState(false);
@@ -53,6 +60,13 @@ export default function MusicPage() {
   const [editing, setEditing] = useState<RoadItem | null>(null);
   const [deleting, setDeleting] = useState<RoadItem | null>(null);
   const [draft, setDraft] = useState<Draft>(EMPTY);
+  const [quickMeta, setQuickMeta] = useState<QuickMeta>({ title: 'ONE-DAY PLAYLIST' });
+  const [quickSettings, setQuickSettings] = useState(false);
+  const [quickClear, setQuickClear] = useState(false);
+  const [quickTitle, setQuickTitle] = useState('ONE-DAY PLAYLIST');
+  const [now, setNow] = useState(Date.now());
+  const quickFileRef = useRef<HTMLInputElement>(null);
+  const quickBg = useBlobUrl(temporary ? quickMeta.bgId : undefined);
   const playerRef = useRef<YTPlayer | null>(null);
   const itemsRef = useRef(items);
   const currentRef = useRef(currentId);
@@ -62,6 +76,39 @@ export default function MusicPage() {
   currentRef.current = currentId;
   repeatRef.current = repeat;
   shuffleRef.current = shuffle;
+
+  useEffect(() => {
+    if (!temporary) return;
+    try {
+      const raw = localStorage.getItem(QUICK_META_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as QuickMeta;
+        setQuickMeta(parsed);
+        setQuickTitle(parsed.title || 'ONE-DAY PLAYLIST');
+      }
+    } catch { /* 기본값 */ }
+    const timer = window.setInterval(() => setNow(Date.now()), 1000);
+    return () => window.clearInterval(timer);
+  }, [temporary]);
+
+  useEffect(() => {
+    if (!temporary || !quickMeta.expiresAt || new Date(quickMeta.expiresAt).getTime() > now) return;
+    setAll([]);
+    const clean = { title: quickMeta.title || 'ONE-DAY PLAYLIST', bgId: quickMeta.bgId };
+    setQuickMeta(clean);
+    try { localStorage.setItem(QUICK_META_KEY, JSON.stringify(clean)); } catch { /* 무시 */ }
+    playerRef.current?.stopVideo();
+    setCurrentId(null);
+  }, [temporary, quickMeta, now, setAll]);
+
+  const saveQuickMeta = (next: QuickMeta) => {
+    setQuickMeta(next);
+    try { localStorage.setItem(QUICK_META_KEY, JSON.stringify(next)); } catch { /* 무시 */ }
+  };
+  const timeLeft = quickMeta.expiresAt ? Math.max(0, new Date(quickMeta.expiresAt).getTime() - now) : 0;
+  const timeLeftText = quickMeta.expiresAt
+    ? `${String(Math.floor(timeLeft / 3600000)).padStart(2, '0')}:${String(Math.floor(timeLeft / 60000) % 60).padStart(2, '0')}:${String(Math.floor(timeLeft / 1000) % 60).padStart(2, '0')}`
+    : '첫 곡 추가 후 24:00:00';
 
   const allow = (p: MenuPerm) => (p === 'admin' ? isAdmin : p === 'member' ? !!user : true);
   const canAdd = !!user && allow(menuSet.roadUpload);
@@ -182,14 +229,18 @@ export default function MusicPage() {
       if (editing.id === currentId) playerRef.current?.cueVideoById(youtubeId);
       toast('곡 정보를 수정했습니다');
     } else {
+      const expiresAt = temporary
+        ? (quickMeta.expiresAt ?? new Date(Date.now() + DAY).toISOString())
+        : undefined;
       const item: RoadItem = {
-        id: newId(), secId: MUSIC_SEC, music: true, musicOrder: items.length,
+        id: newId(), ...(temporary ? {} : { secId: MUSIC_SEC }), music: true, musicOrder: items.length,
         title: draft.title.trim(), artist: draft.artist.trim(), note: draft.note.trim(), youtubeId,
         author: user!.nickname, authorId: user!.id, date: new Date().toISOString(),
         ph: '', ratio: '16 / 9', fold: null, comments: [], visibility: 'public',
       };
       // 구형 곡은 순서 필드가 없으므로, 새 곡을 붙일 때 현재 표시 순서도 함께 확정한다.
       setItems([...items.map((it, index) => ({ ...it, musicOrder: index })), item]);
+      if (temporary && expiresAt !== quickMeta.expiresAt) saveQuickMeta({ ...quickMeta, expiresAt });
       if (!currentId) setCurrentId(item.id);
       toast('재생목록에 노래를 추가했습니다');
     }
@@ -209,10 +260,16 @@ export default function MusicPage() {
   };
 
   return (
-    <section className="page music-page">
+    <section className={`page music-page ${temporary ? 'quick-music-page' : ''}`}
+      style={temporary && quickBg ? { '--quick-bg': `url("${quickBg}")` } as CSSProperties : undefined}>
       <div className="page-head music-page-head">
-        <PageTitle>MUSIC</PageTitle>
-        <EditableDesc k="music-desc" def="좋아하는 노래를 모았습니다" />
+        <PageTitle>{temporary ? quickMeta.title : 'MUSIC'}</PageTitle>
+        {temporary ? <p className="quick-expiry">24H TEMPORARY · 남은 시간 {timeLeftText}</p>
+          : <EditableDesc k="music-desc" def="좋아하는 노래를 모았습니다" />}
+        {temporary && isAdmin && <div className="head-actions">
+          <button className="btn btn-ghost" onClick={() => { setQuickTitle(quickMeta.title); setQuickSettings(true); }}>PLAYLIST SETTING</button>
+          <button className="btn btn-ghost" disabled={!items.length} onClick={() => setQuickClear(true)}>EMPTY</button>
+        </div>}
       </div>
 
       <div className="panel music-deck">
@@ -288,6 +345,32 @@ export default function MusicPage() {
         </div>
       </Modal>
 
+      {temporary && <Modal open={quickSettings} onClose={() => setQuickSettings(false)} small title="임시 플레이리스트 설정"
+        desc="배경 이미지는 이 브라우저의 임시 플레이리스트에만 적용됩니다."
+        actions={<><button className="btn btn-ghost" onClick={() => setQuickSettings(false)}>CANCEL</button>
+          <button className="btn btn-dark" onClick={() => { saveQuickMeta({ ...quickMeta, title: quickTitle.trim() || 'ONE-DAY PLAYLIST' }); setQuickSettings(false); }}>SAVE</button></>}>
+        <div className="music-form">
+          <label><span>TITLE</span><KInput value={quickTitle} onChange={e => setQuickTitle(e.target.value)} /></label>
+          <label><span>BACKGROUND</span>
+            <input ref={quickFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={async e => {
+              const file = e.target.files?.[0]; e.target.value = ''; if (!file) return;
+              const bgId = await putBlob(file); saveQuickMeta({ ...quickMeta, bgId });
+            }} />
+            <button className="btn btn-ghost" onClick={() => quickFileRef.current?.click()}>IMAGE UPLOAD</button>
+          </label>
+        </div>
+      </Modal>}
+
+      {temporary && <ConfirmModal open={quickClear} title="임시 플레이리스트를 비울까요?"
+        body="등록한 곡과 남은 시간이 초기화됩니다." onClose={() => setQuickClear(false)}
+        buttons={[
+          { label: 'EMPTY', kind: 'accent', onClick: () => {
+            setItems([]); saveQuickMeta({ title: quickMeta.title, bgId: quickMeta.bgId });
+            playerRef.current?.stopVideo(); setCurrentId(null); setQuickClear(false);
+          } },
+          { label: 'CANCEL', kind: 'ghost', onClick: () => setQuickClear(false) },
+        ]} />}
+
       <ConfirmModal open={deleting !== null} title="노래를 삭제하시겠습니까?" body={deleting?.title ?? ''} onClose={() => setDeleting(null)}
         buttons={[
           { label: 'DELETE', kind: 'accent', onClick: () => {
@@ -305,4 +388,8 @@ export default function MusicPage() {
         ]} />
     </section>
   );
+}
+
+export default function MusicPage() {
+  return <MusicPlayerPage />;
 }

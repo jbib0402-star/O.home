@@ -18,7 +18,7 @@ import { createPortal } from 'react-dom';
 import { useBlobUrl } from '@/lib/blobStore';
 import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
 
-import { EditableDesc, PageTitle } from '@/components/ui/PageText';
+import { PageTitle } from '@/components/ui/PageText';
 import { ConfirmModal, Modal } from '@/components/ui/Modal';
 import { KInput } from '@/components/ui/Kit';
 
@@ -43,6 +43,7 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
     themeMode: 'default',
     colors: [],
     colorTipMode: 'hex',
+    outfits: [],
     arts: [],
     thumbId: undefined,
     thumbCrop: undefined,
@@ -221,26 +222,26 @@ function CharDetailInner() {
   };
 
   const editHref = auKey ? `/chars/${ch.id}/edit?au=${encodeURIComponent(auKey)}` : `/chars/${ch.id}/edit`;
+  // 의상 전신이 등록되면 이름 버튼으로 전환한다. 구 프로필은 기존 아트를 자동으로 「기본/ART n」으로 보여 호환한다.
+  const legacyArts = eff.arts && eff.arts.length > 0
+    ? eff.arts
+    : eff.artId ? [eff.artId] : eff.artUrl ? [eff.artUrl] : [];
+  const usingNamedOutfits = (eff.outfits?.length ?? 0) > 0;
+  const outfitChoices = usingNamedOutfits
+    ? eff.outfits!
+    : legacyArts.map((imgId, i) => ({ id: 'legacy-' + i, label: i === 0 ? '기본' : 'ART ' + (i + 1), imgId }));
+  const activeOutfitIdx = outfitChoices.length > 0 ? Math.min(artIdx, outfitChoices.length - 1) : 0;
+  const activeOutfit = outfitChoices[activeOutfitIdx];
 
   return (
-    <section className="page page-char-detail">
-      <div className="page-head">
-        {/* 제목 자리는 메뉴 이름 — 클릭 시 목록 복귀. 캐릭터 이름은 우측 프로필 패널에 크게 표시 */}
-        <PageTitle>CHARACTERS</PageTitle>
-        {/* 캐릭터별로 별도 저장 — 키에 캐릭터 id 포함 */}
-        <EditableDesc k={`char-detail-desc:${ch.id}`} def="좌측 아이콘 탭 → 우측 정보 전환" />
-        <div className="head-actions">
-          {isAdmin && <button className="btn btn-dark" onClick={() => setDelAsk(true)}>DELETE</button>}
-        </div>
-
-        <ConfirmModal open={delAsk} title="캐릭터를 삭제하시겠습니까?"
-          body="프로필·탭 정보가 함께 삭제되며 복구할 수 없습니다. 이 캐릭터가 들어간 자관에서는 멤버 표시가 사라집니다."
-          onClose={() => setDelAsk(false)}
-          buttons={[
-            { label: 'DELETE', kind: 'accent', onClick: () => { setChars(chars.filter(c => c.id !== ch.id)); router.push('/chars'); } },
-            { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
-          ]} />
-      </div>
+    <section className="page-char-detail">
+      <ConfirmModal open={delAsk} title="캐릭터를 삭제하시겠습니까?"
+        body="프로필·탭 정보가 함께 삭제되며 복구할 수 없습니다. 이 캐릭터가 들어간 자관에서는 멤버 표시가 사라집니다."
+        onClose={() => setDelAsk(false)}
+        buttons={[
+          { label: 'DELETE', kind: 'accent', onClick: () => { setChars(chars.filter(c => c.id !== ch.id)); router.push('/chars'); } },
+          { label: 'CANCEL', kind: 'ghost', onClick: () => setDelAsk(false) },
+        ]} />
       <Modal open={auCreateOpen} small title="새 AU 프로필"
         desc="AU 이름을 입력하면 독립된 프로필을 만든 뒤 바로 편집 화면으로 이동합니다."
         onClose={() => { setAuCreateOpen(false); setAuCreateName(''); }}
@@ -259,14 +260,18 @@ function CharDetailInner() {
           { label: 'DELETE', kind: 'accent', onClick: () => { if (auDelAsk) deleteCharacterAu(auDelAsk); } },
           { label: 'CANCEL', kind: 'ghost', onClick: () => setAuDelAsk(null) },
         ]} />
-      <div className="profile-wrap">
-        {/* 좌측 내비게이션 — 프로필 버전(AU)과 현재 버전의 내용 탭을 분리한다. */}
-        <nav className="side-icons" aria-label="캐릭터 프로필 탐색">
+      <div className="profile-editorial">
+        <button type="button" className="profile-back" onClick={() => router.push('/chars')} aria-label="캐릭터 목록으로 돌아가기">
+          ← BACK
+        </button>
+
+        {/* 좁은 좌측 레일 — AU와 INFO 탭은 기존 기능을 그대로 유지한다. */}
+        <nav className="side-icons profile-editorial-rail" aria-label="캐릭터 프로필 탐색">
           <div className="side-icon-group">
             <span className="side-icon-label">AU</span>
-            <button className={`side-au-button ${auKey === null ? 'on' : ''}`}
+            <button className={'side-au-button ' + (auKey === null ? 'on' : '')}
               data-tip="ORIGINAL" aria-label="ORIGINAL 프로필" onClick={() => setAuKey(null)}>
-              <span className={`side-au-face ph ${ch.thumbClass}`}>
+              <span className={'side-au-face ph ' + ch.thumbClass}>
                 {charThumbRef(ch)
                   ? <CroppedBlobImg fileRef={charThumbRef(ch)} crop={ch.thumbCrop} ph={ch.thumbClass} />
                   : <b>O</b>}
@@ -274,13 +279,12 @@ function CharDetailInner() {
             </button>
             {charAus.map(a => {
               const av = charWithAu(ch, a.key);
-              // 자관 AU만 기존 첫 아트 썸네일 fallback을 유지한다. 캐릭터 자체 AU 이미지는 독립적이다.
-              const faceRef = av.thumbId ?? (a.source === 'relation' ? av.arts?.[0] : undefined);
-              const tip = a.source === 'relation' ? `${a.label} · ${a.relName ?? '자관'} AU` : a.label;
+              const faceRef = av.thumbId ?? (a.source === 'relation' ? (av.outfits?.[0]?.imgId ?? av.arts?.[0]) : undefined);
+              const tip = a.source === 'relation' ? a.label + ' · ' + (a.relName ?? '자관') + ' AU' : a.label;
               return (
-                <button key={a.key} className={`side-au-button ${auKey === a.key ? 'on' : ''}`}
-                  data-tip={tip} aria-label={`${a.label} 프로필`} onClick={() => setAuKey(a.key)}>
-                  <span className={`side-au-face ph ${ch.thumbClass}`}>
+                <button key={a.key} className={'side-au-button ' + (auKey === a.key ? 'on' : '')}
+                  data-tip={tip} aria-label={a.label + ' 프로필'} onClick={() => setAuKey(a.key)}>
+                  <span className={'side-au-face ph ' + ch.thumbClass}>
                     {faceRef
                       ? <CroppedBlobImg fileRef={faceRef} crop={av.thumbCrop} ph={ch.thumbClass} />
                       : <b>{a.label.trim().charAt(0) || 'A'}</b>}
@@ -299,11 +303,12 @@ function CharDetailInner() {
               <div className="side-icon-divider" aria-hidden="true" />
               <div className="side-icon-group">
                 <span className="side-icon-label">INFO</span>
-                <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" aria-label="기본 정보" onClick={() => pickTab('basic')}>☰</button>
+                <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" aria-label="기본 정보"
+                  onClick={() => pickTab('basic')}>☰</button>
                 {visibleTabs.map(t => (
-                  <button key={t.id} className={`${tab === t.id ? 'on ' : ''}${t.visibility === 'private' ? 'side-tab-private' : ''}`}
-                    data-tip={`${t.title || '추가 프로필'}${t.visibility === 'private' ? ' · 비공개' : ''}`}
-                    aria-label={`${t.title || '추가 프로필'}${t.visibility === 'private' ? ' 비공개' : ''}`}
+                  <button key={t.id} className={(tab === t.id ? 'on ' : '') + (t.visibility === 'private' ? 'side-tab-private' : '')}
+                    data-tip={(t.title || '추가 프로필') + (t.visibility === 'private' ? ' · 비공개' : '')}
+                    aria-label={(t.title || '추가 프로필') + (t.visibility === 'private' ? ' 비공개' : '')}
                     onClick={() => pickTab(t.id)}>{t.icon}{t.visibility === 'private' && <span aria-hidden="true">🔒</span>}</button>
                 ))}
               </div>
@@ -311,126 +316,113 @@ function CharDetailInner() {
           )}
         </nav>
 
-        {/* AU 미등록 — 왼쪽 선택 메뉴를 유지한 채 등록 안내를 표시한다. */}
         {auKey && !auRegistered ? (
           <div className="panel profile-au-empty">
-            <div style={{ fontFamily: 'var(--serif)', fontSize: 24, letterSpacing: '.14em', marginBottom: 8 }}>
-              {charAus.find(a => a.key === auKey)?.label ?? 'AU'}
-            </div>
-            <p style={{ fontSize: 13, color: 'var(--faint)', marginBottom: 16 }}>
-              이 AU의 「{ch.name}」이 아직 등록되지 않았습니다 — 등록하면 이 캐릭터의 AU 프로필로 연동됩니다
-            </p>
-            {canEdit && (
-              <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>
-            )}
+            <div className="profile-au-empty-title">{charAus.find(a => a.key === auKey)?.label ?? 'AU'}</div>
+            <p>이 AU의 「{ch.name}」이 아직 등록되지 않았습니다 — 등록하면 이 캐릭터의 AU 프로필로 연동됩니다</p>
+            {canEdit && <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>}
           </div>
         ) : (
-        <>
+          <>
+            {/* 왼쪽 큰 전신 화보 영역 — 페이지 높이를 채우고 정보가 길어도 화면에 남는다. */}
+            <section className="profile-editorial-stage" aria-label={eff.name + ' 전신'}>
+              <div className="profile-stage-kicker">
+                <span>{auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'ORIGINAL'}</span>
+                {activeOutfit && <b>{activeOutfit.label}</b>}
+              </div>
+              <span className="profile-editorial-watermark" aria-hidden="true">{eff.name}</span>
 
-        {/* 중앙 아트 — 스티키 · 추가 아트가 있으면 클릭으로 넘겨보기 */}
-        {(() => {
-          const arts = eff.arts && eff.arts.length > 0 ? eff.arts : (eff.artId ? [eff.artId] : []);
-          if (arts.length === 0 && !eff.artUrl) {
-            return <div className={`profile-center ph ${ch.thumbClass}`}><span>CHARACTER FULL ART</span></div>;
-          }
-          const cur = Math.min(artIdx, arts.length - 1);
-          return (
-            <div className="profile-center" ref={artBoxRef}
-              style={{ cursor: arts.length > 1 ? 'pointer' : undefined }}
-              onClick={() => { if (arts.length > 1) setArtIdx(i => (i + 1) % arts.length); }}
-              /* 대표 아트 우클릭 → 이 화면에 보일 위치 조정 (관리자, v2.0 사용자 확정) */
-              onContextMenu={e => {
-                if (!(isAdmin || charGrant(ch, user?.id) === 'edit') || cur !== 0) return;
-                e.preventDefault();
-                setArtCtx({ x: e.clientX, y: e.clientY, ref: arts[0] });
-              }}>
-              <span className="profile-art-watermark" aria-hidden="true">{eff.name}</span>
-              {/* 기본은 전체 이미지가 보이는 자동 contain. 대표 전신에 사용자가 명시적으로 저장한
-                  기존 artCrop이 있을 때만 하위 호환을 위해 종전 위치 조정 결과를 재현한다. */}
-              {cur === 0 && eff.artCrop ? (
-                <CroppedBlobImg fileRef={arts[cur] ?? eff.artUrl}
-                  crop={eff.artCrop} ph={ch.thumbClass} label="CHARACTER FULL ART" />
-              ) : (
-                <FullArtBlobImg fileRef={arts[cur] ?? eff.artUrl}
-                  ph={ch.thumbClass} label="CHARACTER FULL ART" alt={`${eff.name} 전신`} />
-              )}
-              {arts.length > 1 && (
-                <div style={{ position: 'absolute', left: 0, right: 0, bottom: 12, display: 'flex', justifyContent: 'center', gap: 5, zIndex: 3 }}>
-                  {arts.map((_, i) => (
-                    <i key={i} style={{
-                      width: i === cur ? 16 : 6, height: 6, borderRadius: 4,
-                      background: i === cur ? '#fff' : 'rgba(255,255,255,.45)', transition: '.2s',
-                    }} />
-                  ))}
+              <div className={'profile-editorial-art-frame ' + (!activeOutfit ? 'ph ' + ch.thumbClass : '')}
+                ref={artBoxRef}
+                onContextMenu={e => {
+                  if (!canEdit || usingNamedOutfits || activeOutfitIdx !== 0 || !legacyArts[0]) return;
+                  e.preventDefault();
+                  setArtCtx({ x: e.clientX, y: e.clientY, ref: legacyArts[0] });
+                }}>
+                {activeOutfit ? (
+                  !usingNamedOutfits && activeOutfitIdx === 0 && eff.artCrop ? (
+                    <CroppedBlobImg fileRef={activeOutfit.imgId}
+                      crop={eff.artCrop} ph={ch.thumbClass} label="CHARACTER FULL ART" />
+                  ) : (
+                    <FullArtBlobImg fileRef={activeOutfit.imgId}
+                      ph={ch.thumbClass} label="CHARACTER FULL ART" alt={eff.name + ' · ' + activeOutfit.label + ' 전신'} />
+                  )
+                ) : <span>CHARACTER FULL ART</span>}
+              </div>
+
+              {outfitChoices.length > 0 && (
+                <div className="profile-outfit-switch" aria-label="의상 전신 선택">
+                  <span className="profile-outfit-label">OUTFIT</span>
+                  <div>
+                    {outfitChoices.map((o, i) => (
+                      <button key={o.id} type="button" className={i === activeOutfitIdx ? 'on' : ''}
+                        aria-pressed={i === activeOutfitIdx} onClick={() => setArtIdx(i)}>
+                        {o.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
-            </div>
-          );
-        })()}
+            </section>
 
-        {/* 우측 정보 패널 — 최상단 캐릭터 이름 크게 (v1.6) · AU면 그 AU의 이름·폰트 */}
-        <div className="panel profile-info" ref={infoRef} style={{ fontFamily: familyOf(eff.bodyFontId) }}>
-          <div className="profile-info-head">
-            <div className="profile-kicker">
-              {tab === 'basic'
-                ? (auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'ORIGINAL')
-                : (curTab?.title?.trim() || 'PROFILE')}
-            </div>
-            <div className="profile-info-actions">
-              {/* 권한과 AU 판정은 기존 조건 그대로 유지한다. */}
-              {canEdit && (
-                <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>
+            {/* 오른쪽은 카드 테두리를 없앤 편집 화보형 정보 영역. 동적 스펙/탭 데이터는 그대로 사용한다. */}
+            <section className="profile-editorial-info" ref={infoRef} style={{ fontFamily: familyOf(eff.bodyFontId) }}>
+              <div className="profile-info-head">
+                <div className="profile-kicker">
+                  {tab === 'basic'
+                    ? (auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'CHARACTER PROFILE')
+                    : (curTab?.title?.trim() || 'PROFILE')}
+                </div>
+                <div className="profile-info-actions">
+                  {canEdit && <button className="btn btn-dark" onClick={() => router.push(editHref)}>EDIT</button>}
+                  {canEdit && auKey && isCharacterAuKey(auKey) && (
+                    <button className="btn btn-ghost" onClick={() => setAuDelAsk(auKey)}>AU DELETE</button>
+                  )}
+                  {isAdmin && <button className="btn btn-ghost" onClick={() => setDelAsk(true)}>DELETE</button>}
+                </div>
+              </div>
+
+              <div className="profile-name" style={{
+                fontFamily: familyOf(eff.fontId) ?? 'var(--serif)',
+                '--character-name-size': (eff.nameSize ?? 38) + 'px',
+                fontWeight: 500,
+              } as React.CSSProperties}>{eff.name}</div>
+              {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
+
+              {eff.colors.length > 0 && (
+                <div className="profile-palette" aria-label="테마 컬러">
+                  {eff.colors.map(c => {
+                    const tip = eff.colorTipMode === 'label' ? (c.label || c.hex.toUpperCase())
+                      : eff.colorTipMode === 'both' ? (c.label ? c.label + ' · ' + c.hex.toUpperCase() : c.hex.toUpperCase())
+                      : c.hex.toUpperCase();
+                    return <span key={c.hex + c.label} className="sw-static" data-hex={tip}
+                      title={tip} style={{ background: c.hex, boxShadow: chipBorder(eff.colorBd) }} />;
+                  })}
+                </div>
               )}
-              {canEdit && auKey && isCharacterAuKey(auKey) && (
-                <button className="btn btn-ghost" onClick={() => setAuDelAsk(auKey)}>AU DELETE</button>
-              )}
-            </div>
-          </div>
-          {/* 크기는 캐릭터마다 직접 정한다 (등록·수정의 「이름 크기」) — 자동으로 줄이면
-              이름 길이에 따라 어중간해져서, 정한 크기를 그대로 쓴다 (v2.0 사용자 확정) */}
-          <div className="profile-name" style={{
-            fontFamily: familyOf(eff.fontId) ?? 'var(--serif)',
-            '--character-name-size': `${eff.nameSize ?? 38}px`,
-            fontWeight: 500,
-          } as React.CSSProperties}>{eff.name}</div>
-          {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
 
-          {eff.colors.length > 0 && (
-            <div className="profile-palette" aria-label="테마 컬러">
-              {eff.colors.map(c => {
-                const tip = eff.colorTipMode === 'label' ? (c.label || c.hex.toUpperCase())
-                  : eff.colorTipMode === 'both' ? (c.label ? `${c.label} · ${c.hex.toUpperCase()}` : c.hex.toUpperCase())
-                  : c.hex.toUpperCase();
-                return <span key={c.hex + c.label} className="sw-static" data-hex={tip}
-                  title={tip} style={{ background: c.hex, boxShadow: chipBorder(eff.colorBd) }} />;
-              })}
-            </div>
-          )}
-
-          {tab === 'basic' ? (
-            <>
-              {/* 기본 정보 탭은 제목을 두지 않는다 — 처음 보이는 화면이라 안내가 필요 없다
-                  (다른 탭은 무엇을 보는 중인지 알아야 하므로 제목을 그대로 둔다) */}
-              <dl className="spec">
-                {eff.specs.filter(s => s.value.trim()).map(s => (
-                  <div className="spec-item" key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></div>
-                ))}
-              </dl>
-              {basicHtml && (
-                <section className="profile-copy">
-                  <div className="profile-section-label">INTRODUCTION</div>
-                  <div className="prose" dangerouslySetInnerHTML={{ __html: basicHtml }} />
+              {tab === 'basic' ? (
+                <>
+                  <dl className="spec profile-editorial-spec">
+                    {eff.specs.filter(s => s.value.trim()).map(s => (
+                      <div className="spec-item" key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></div>
+                    ))}
+                  </dl>
+                  {basicHtml && (
+                    <section className="profile-copy">
+                      <div className="profile-section-label">INTRODUCTION</div>
+                      <div className="prose" dangerouslySetInnerHTML={{ __html: basicHtml }} />
+                    </section>
+                  )}
+                </>
+              ) : (
+                <section className="profile-tab-section">
+                  {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}
+                  {tabHtml && <div className="prose profile-tab-copy" dangerouslySetInnerHTML={{ __html: tabHtml }} />}
                 </section>
               )}
-            </>
-          ) : (
-            <>
-              {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}
-              {tabHtml && <div className="prose profile-tab-copy" dangerouslySetInnerHTML={{ __html: tabHtml }} />}
-            </>
-          )}
-        </div>
-        </>
+            </section>
+          </>
         )}
       </div>
 

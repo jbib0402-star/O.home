@@ -1683,6 +1683,38 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .cmt.reply-depth{margin-left:22px;padding-left:12px;border-left:2px solid var(--line)}
 .cmt-input{border-top:1px solid var(--line);padding:12px;display:flex;gap:8px}
 .cmt-input .btn{white-space:nowrap}
+
+/* 로드비 댓글 입력 — 메모장형 textarea + 상단 전송 버튼 */
+.roadview-item .cmt-input{display:block;padding:8px}
+.roadview-item .cmt-input.guest{display:block}
+.roadview-item .cmt-input>.guest-id{margin-bottom:7px}
+.loadb-compose{display:grid;gap:5px}
+.loadb-compose-head{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:5px;align-items:stretch}
+.loadb-compose-head>span{min-width:0;height:32px;display:flex;align-items:center;padding:0 10px;border:1.5px solid var(--line-dark);border-radius:6px;background:var(--panel-solid);color:var(--sub);font-family:var(--sans);font-size:calc(11px*var(--fs,1));letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.loadb-compose-actions{display:flex;gap:4px}
+.loadb-compose-actions .loadb-compose-submit{width:34px}
+.loadb-compose-submit,.loadb-compose-close{height:32px;display:grid;place-items:center;border-radius:6px;border:1.5px solid var(--line-dark);font-size:16px;line-height:1;transition:.14s}
+.loadb-compose-submit{width:34px;background:var(--btn-dark,var(--ink));color:var(--btn-dark-fg,#fff)}
+.loadb-compose-submit:hover:not(:disabled){opacity:.84}
+.loadb-compose-submit:disabled{opacity:.35;cursor:not-allowed}
+.loadb-compose-close{width:28px;background:var(--panel-solid);color:var(--faint)}
+.loadb-compose textarea{display:block;width:100%;min-height:82px;max-height:260px;resize:vertical;padding:9px 10px;border:1.5px solid var(--line-dark);border-radius:6px;background:var(--panel-solid);color:var(--ink);font:inherit;font-size:calc(12px*var(--fs,1));line-height:1.55;outline:none}
+.loadb-compose textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 10%,transparent)}
+.loadb-compose textarea:disabled{opacity:.58;cursor:not-allowed}
+.loadb-compose textarea::placeholder{color:var(--faint)}
+.loadb-compose-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:34px;padding:6px 9px;border:1.5px solid var(--line-dark);border-radius:6px;background:color-mix(in srgb,var(--panel-solid) 92%,transparent)}
+.loadb-compose-foot .cmt-options{padding:0;gap:12px}
+.loadb-compose-foot>small{flex-shrink:0;color:var(--faint);font-size:calc(8.5px*var(--fs,1));white-space:nowrap}
+.loadb-compose-reply{margin-top:2px}
+.cmt-reply-form .loadb-compose textarea{min-height:64px}
+
+/* 로드비 카드 전체 접기 — 스포일러/수위주의 접기와 별개인 보기 상태 */
+.roadview-item .rv-head{display:flex;align-items:center;gap:8px}
+.rv-collapse-btn{margin-left:auto;padding:4px 8px;border-radius:6px;color:var(--faint);font-size:calc(9.5px*var(--fs,1));letter-spacing:.02em;transition:.14s}
+.rv-collapse-btn:hover{background:var(--soft);color:var(--ink)}
+.roadview-item.is-collapsed{display:block}
+.roadview-item.is-collapsed>.art,.roadview-item.is-collapsed>.cmt-side{display:none}
+.roadview-item.is-collapsed .rv-head{border-bottom:0}
 /* 특수문자 프리셋 팝업 (v1.9) — SymbolInput */
 .sym-pop{position:fixed;z-index:120;padding:8px;background:var(--panel-solid,#fff);border:1px solid var(--line);border-radius:11px;box-shadow:var(--sh-dd)} /* body 포털 — 패널 overflow에 잘리지 않음 (v1.9) */
 .sym-pop .sym-tabs{display:flex;gap:2px;margin-bottom:6px}
@@ -2084,4 +2116,10 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .char-outfit-edit-preview{width:56px}
   .char-outfit-edit-row>.btn{grid-column:3/5;justify-self:start}
   .char-outfit-edit-row>.fx{grid-column:4;grid-row:1}
+}
+
+@media(max-width:620px){
+  .loadb-compose-foot{align-items:flex-start;flex-direction:column;gap:5px}
+  .loadb-compose-foot>small{align-self:flex-end}
+  .loadb-compose textarea{min-height:76px}
 }

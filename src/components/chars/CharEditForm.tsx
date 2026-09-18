@@ -235,7 +235,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
 
         {/* 의상별 전신 — 상세 페이지 하단의 의상 버튼과 1:1로 연결 */}
         <label className="k-label" style={{ margin: '8px 0 0' }}>
-          의상별 전신 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 버튼 이름 · 전신 이미지 · ⠿ 순서 변경</span>
+          추가 의상 전신 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 「기본」 옆에 붙을 버튼 이름 · 전신 이미지 · ⠿ 순서 변경</span>
         </label>
         {outfits.length > 0 && (
           <DragList items={outfits} keyOf={o => o.id} onReorder={setOutfits}
@@ -267,11 +267,11 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
             e.target.value = '';
           }} />
         <button className="btn btn-ghost" style={addBtn}
-          onClick={() => setOutfits(l => [...l, { id: newId(), label: l.length === 0 ? '기본' : '의상 ' + (l.length + 1) }])}>
+          onClick={() => setOutfits(l => [...l, { id: newId(), label: '의상 ' + (l.length + 1) }])}>
           ＋ ADD OUTFIT
         </button>
         <p className="hint" style={{ margin: 0 }}>
-          ※ 의상 전신이 없으면 기존 대표 전신을 「기본」으로 표시합니다. AU에서는 ORIGINAL 의상을 자동 상속하지 않습니다.
+          ※ 기존 대표 전신은 상세에서 항상 「기본」 탭으로 먼저 표시됩니다. 여기서는 그 옆에 붙을 추가 의상만 등록합니다. AU에서는 ORIGINAL 의상을 자동 상속하지 않습니다.
         </p>
 
         {/* 상세용 전신/아트 목록 */}

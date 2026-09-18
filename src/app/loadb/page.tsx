@@ -2,6 +2,7 @@
 // 그림게시판 로드뷰 (4.10) — 목록 없이 최신순 즉시 표시 · 좌 그림/우 댓글 · 즉시 업로드 · 접기
 import React, { Suspense, useEffect, useRef, useState } from 'react';
 import { useAuth } from '@/lib/auth';
+import { useMembers } from '@/lib/members';
 import { useSectionParam, filterSection, sectionSetter } from '@/lib/sectionStore';
 import {
   useLocalList, newId, fmtDate, Comment,
@@ -23,7 +24,7 @@ import { youtubeVideoId } from '@/lib/youtube';
 const PAGE_SIZE = 4;
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
 
-function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
+function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, adminIds, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;
   comments: Comment[];                                  // 이 그림의 댓글 — 분리 저장분 + 옛 항목 안의 것 (v2.0)
   onComment: (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }, guest?: { name: string }) => void;
@@ -33,6 +34,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   guestMode: boolean;                                   // 비로그인 방문자 작성 (닉네임+비밀번호 — 방명록 4.7과 동일)
   viewerId?: string;
   isAdmin: boolean;
+  adminIds: Set<string>;                                // 작성자의 역할 기준 — 보는 사람과 무관하게 관리자 댓글 좌측 고정
   editLevel: (c: Comment) => 'free' | 'pw' | null;      // 수정 — 본인만 (게스트는 비밀번호)
   delLevel: (c: Comment) => 'free' | 'pw' | null;       // 삭제 — 본인·관리자 (게스트는 비밀번호)
   canEditItem: boolean;                                 // 그림 수정 — 작성자 본인만 (v1.9)
@@ -42,7 +44,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
 }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
-  const [mediaCollapsed, setMediaCollapsed] = useState(false); // 업로드한 그림/영상만 접기/펼치기 (화면 상태)
+  const [mediaCollapsed, setMediaCollapsed] = useState(!!item.mediaFolded);
   const [text, setText] = useState('');
   const [gName, setGName] = useState('');               // 게스트 닉네임
   const [secret, setSecret] = useState(false);
@@ -58,6 +60,10 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   const [editText, setEditText] = useState('');
   // 게스트 댓글 관리 — 비밀번호 확인 모달
   const del = useConfirmDelete();
+  useEffect(() => {
+    setMediaCollapsed(!!item.mediaFolded);
+  }, [item.id, item.mediaFolded]);
+
   const folded = item.fold && !open;
   const secretLocked = !!item.secret && !isAdmin && item.authorId !== viewerId;
   const imgSrc = useBlobUrl(secretLocked ? undefined : (item.imgId ?? item.imgUrl));
@@ -105,9 +111,9 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     const canRead = !c.secret || isAdmin || (!!viewerId
       && (c.authorId === viewerId || item.authorId === viewerId || parent?.authorId === viewerId));
     const isFolded = !!c.folded && !expanded.has(c.id);
-    const ownComment = !!viewerId && c.authorId === viewerId;
+    const adminComment = !!c.authorId && adminIds.has(c.authorId);
     return (
-      <div className={`cmt loadb-chat ${replyDepth ? 'reply-depth' : ''} ${c.secret ? 'secret' : ''} ${ownComment ? 'mine' : 'other'}`} key={c.id}>
+      <div className={`cmt loadb-chat ${replyDepth ? 'reply-depth' : ''} ${c.secret ? 'secret' : ''} ${adminComment ? 'admin' : 'other'}`} key={c.id}>
         <div className="loadb-chat-meta">
           <b>{c.author}</b>
           {c.secret && <small className="cmt-secret-mark">🔒 비밀</small>}
@@ -287,6 +293,8 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
 
 function RoadviewPageInner() {
   const { user, isAdmin } = useAuth();
+  const members = useMembers();
+  const adminIds = new Set(members.filter(m => m.role === 'admin').map(m => m.id));
   const toast = useToast();
   // 업로드·댓글 권한 3단계 (4.10 v1.7 — 환경설정 > 메뉴 관리의 로드뷰 항목).
   // 방문자(비로그인) 실사용은 Supabase 익명 처리 시 — mock 단계에선 로그인 전제
@@ -343,15 +351,18 @@ function RoadviewPageInner() {
   const [eNo, setENo] = useState('');      // 번호 수정 (v1.9 — 제목 없이 번호만 쓰는 체계)
   const [eAdult, setEAdult] = useState(false);
   const [eSecret, setESecret] = useState(false);
+  const [eMediaFolded, setEMediaFolded] = useState(false);
   const [delFor, setDelFor] = useState<RoadItem | null>(null);
   const [pendingUpload, setPendingUpload] = useState<File | null>(null);
   const [uploadSecret, setUploadSecret] = useState(false);
+  const [uploadFolded, setUploadFolded] = useState(false);
   const [youtubeOpen, setYoutubeOpen] = useState(false);
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [youtubeSecret, setYoutubeSecret] = useState(false);
+  const [youtubeFolded, setYoutubeFolded] = useState(false);
 
   // 즉시 업로드 (v1.7) — IndexedDB 실저장 (R2 연동 시 서버로 이전)
-  const upload = async (f: File | undefined, secretUpload = false) => {
+  const upload = async (f: File | undefined, secretUpload = false, foldedUpload = false) => {
     if (!f) return;
     const imgId = await putBlob(f); // IndexedDB 실저장 — 새로고침에도 유지
     const it: RoadItem = {
@@ -359,11 +370,12 @@ function RoadviewPageInner() {
       date: new Date().toISOString(), imgId, ph: '', ratio: 'auto',
       fold: null, comments: [],
       no: nextNo,   // 번호 자동 부여 (v1.9)
-      visibility: 'public', secret: secretUpload,
+      visibility: 'public', secret: secretUpload, mediaFolded: foldedUpload,
     };
     setItems([it, ...items]);
     setPendingUpload(null);
     setUploadSecret(false);
+    setUploadFolded(false);
     toast(`${padNo(it.no)} 업로드되었습니다`);
   };
 
@@ -374,12 +386,13 @@ function RoadviewPageInner() {
       id: newId(), title: '', author: user!.nickname, authorId: user!.id,
       date: new Date().toISOString(), youtubeId, ph: '', ratio: '16 / 9',
       fold: null, comments: [], no: nextNo,
-      visibility: 'public', secret: youtubeSecret,
+      visibility: 'public', secret: youtubeSecret, mediaFolded: youtubeFolded,
     };
     setItems([it, ...items]);
     setYoutubeUrl('');
     setYoutubeOpen(false);
     setYoutubeSecret(false);
+    setYoutubeFolded(false);
     toast(`${padNo(it.no)} 유튜브 영상이 추가되었습니다`);
   };
 
@@ -432,9 +445,9 @@ function RoadviewPageInner() {
           {allow(menuSet.roadUpload) && !!user && (
             <>
               <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }}
-                onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingUpload(f); setUploadSecret(false); } e.target.value = ''; }} />
+                onChange={e => { const f = e.target.files?.[0]; if (f) { setPendingUpload(f); setUploadSecret(false); setUploadFolded(false); } e.target.value = ''; }} />
               <button className="btn btn-dark" onClick={() => fileRef.current?.click()}
-                {...fileDrop(fl => { if (fl[0]) { setPendingUpload(fl[0]); setUploadSecret(false); } })}>↑ UPLOAD</button>
+                {...fileDrop(fl => { if (fl[0]) { setPendingUpload(fl[0]); setUploadSecret(false); setUploadFolded(false); } })}>↑ UPLOAD</button>
               <button className="btn btn-ghost" onClick={() => setYoutubeOpen(true)}>▶ YOUTUBE</button>
             </>
           )}
@@ -447,13 +460,19 @@ function RoadviewPageInner() {
           onEditComment={editComment} onDeleteComment={deleteComment}
           canComment={allow(menuSet.roadComment) && (!!user || menuSet.roadComment === 'guest')}
           guestMode={!user && menuSet.roadComment === 'guest'}
-          viewerId={user?.id} isAdmin={isAdmin}
+          viewerId={user?.id} isAdmin={isAdmin} adminIds={adminIds}
           editLevel={editLevel} delLevel={delLevel}
           /* authorId 없는 항목 + 비로그인이면 둘 다 undefined라 통과하던 것 (v2.0 발견) —
              손님이 올린 것은 이제 관리자만 손댈 수 있다(손님 확인 수단이 없다) */
           canEditItem={!!it.authorId && it.authorId === user?.id}
           canDeleteItem={isAdmin || (!!it.authorId && it.authorId === user?.id)}
-          onEdit={() => { setEditFor(it); setENo(String(it.no ?? '')); setEAdult(it.fold?.type === 'adult'); setESecret(!!it.secret || it.visibility === 'private'); }}
+          onEdit={() => {
+            setEditFor(it);
+            setENo(String(it.no ?? ''));
+            setEAdult(it.fold?.type === 'adult');
+            setESecret(!!it.secret || it.visibility === 'private');
+            setEMediaFolded(!!it.mediaFolded);
+          }}
           onDelete={() => setDelFor(it)} />
       ))}
       {visible.length === 0 && (
@@ -475,7 +494,7 @@ function RoadviewPageInner() {
             const nv = parseInt(eNo, 10);
             setItems(items.map(x => x.id === editFor!.id
               ? { ...x, no: Number.isFinite(nv) && nv > 0 ? nv : x.no, fold: eAdult ? { type: 'adult' } : null,
-                visibility: 'public', secret: eSecret } : x));
+                visibility: 'public', secret: eSecret, mediaFolded: eMediaFolded } : x));
             setEditFor(null);
           }}>SAVE</button>
         </>}>
@@ -486,17 +505,21 @@ function RoadviewPageInner() {
               style={{ width: 90, textAlign: 'center' }} />
           </div>
           <KCheck label="수위 주의 접기 (블러 + 클릭 표시)" checked={eAdult} onChange={setEAdult} />
+          <KCheck label="처음부터 미디어 접기 (방문자는 눌러서 펼침)" checked={eMediaFolded} onChange={setEMediaFolded} />
           <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={eSecret} onChange={setESecret} />
         </div>
       </Modal>
 
-      <Modal open={pendingUpload !== null} onClose={() => { setPendingUpload(null); setUploadSecret(false); }} small
+      <Modal open={pendingUpload !== null} onClose={() => { setPendingUpload(null); setUploadSecret(false); setUploadFolded(false); }} small
         title="로드비 업로드" desc={pendingUpload?.name}
         actions={<>
-          <button className="btn btn-ghost" onClick={() => { setPendingUpload(null); setUploadSecret(false); }}>CANCEL</button>
-          <button className="btn btn-dark" onClick={() => upload(pendingUpload ?? undefined, uploadSecret)}>UPLOAD</button>
+          <button className="btn btn-ghost" onClick={() => { setPendingUpload(null); setUploadSecret(false); setUploadFolded(false); }}>CANCEL</button>
+          <button className="btn btn-dark" onClick={() => upload(pendingUpload ?? undefined, uploadSecret, uploadFolded)}>UPLOAD</button>
         </>}>
-        <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={uploadSecret} onChange={setUploadSecret} />
+        <div style={{ display: 'grid', gap: 9 }}>
+          <KCheck label="접어서 올리기 (다른 사람도 처음엔 접힌 상태)" checked={uploadFolded} onChange={setUploadFolded} />
+          <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={uploadSecret} onChange={setUploadSecret} />
+        </div>
       </Modal>
 
       {/* 삭제 경고 모달 */}
@@ -514,16 +537,17 @@ function RoadviewPageInner() {
           { label: 'CANCEL', kind: 'ghost', onClick: () => setDelFor(null) },
         ]} />
 
-      <Modal open={youtubeOpen} onClose={() => { setYoutubeOpen(false); setYoutubeUrl(''); }} small
+      <Modal open={youtubeOpen} onClose={() => { setYoutubeOpen(false); setYoutubeUrl(''); setYoutubeSecret(false); setYoutubeFolded(false); }} small
         title="유튜브 영상 추가" desc="일반 영상, youtu.be 단축 주소, Shorts 링크를 사용할 수 있습니다."
         actions={<>
-          <button className="btn btn-ghost" onClick={() => { setYoutubeOpen(false); setYoutubeUrl(''); }}>CANCEL</button>
+          <button className="btn btn-ghost" onClick={() => { setYoutubeOpen(false); setYoutubeUrl(''); setYoutubeSecret(false); setYoutubeFolded(false); }}>CANCEL</button>
           <button className="btn btn-dark" disabled={!youtubeUrl.trim()} onClick={uploadYoutube}>ADD</button>
         </>}>
         <KInput autoFocus value={youtubeUrl} placeholder="https://youtu.be/..."
           onChange={e => setYoutubeUrl(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') uploadYoutube(); }} />
-        <div style={{ marginTop: 12 }}>
+        <div style={{ marginTop: 12, display: 'grid', gap: 9 }}>
+          <KCheck label="접어서 올리기 (다른 사람도 처음엔 접힌 상태)" checked={youtubeFolded} onChange={setYoutubeFolded} />
           <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={youtubeSecret} onChange={setYoutubeSecret} />
         </div>
       </Modal>

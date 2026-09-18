@@ -42,6 +42,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
 }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
+  const [postCollapsed, setPostCollapsed] = useState(false); // 이 로드비 카드 전체 접기/펼치기 (화면 상태)
   const [text, setText] = useState('');
   const [gName, setGName] = useState('');               // 게스트 닉네임
   const [secret, setSecret] = useState(false);
@@ -144,11 +145,16 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     );
   };
   return (
-    <div className="panel roadview-item">
-      {/* 그림별 상단 번호 영역 (v1.9 사용자 확정) — 숫자만 표시 (제목·작성자 없이) */}
+    <div className={`panel roadview-item ${postCollapsed ? 'is-collapsed' : ''}`}>
+      {/* 그림별 상단 번호 영역 + 방문자가 이 카드 전체를 접어 둘 수 있는 보기 옵션 */}
       <div className="rv-head">
         <b>No.{String(item.no ?? 0).padStart(3, '0')}</b>
         {(item.secret || item.visibility === 'private') && <span className="rv-secret-badge">🔒 SECRET</span>}
+        <button type="button" className="rv-collapse-btn"
+          aria-expanded={!postCollapsed}
+          onClick={() => setPostCollapsed(v => !v)}>
+          {postCollapsed ? '▾ 펼치기' : '▴ 접기'}
+        </button>
       </div>
       {/* 투명 PNG도 카드색 위에 자연스럽게 — 어두운 하드코딩 제거 (v1.9 사용자 피드백) */}
       <div className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
@@ -206,18 +212,30 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
               {renderComment(c)}
               {replyTo === c.id && (
                 <div className="cmt-reply-form">
-                  <small>{replyLabel}님에게 답글</small>
                   {guestMode && <GuestIdBar name={gName} onName={setGName} />}
-                  <div className="cmt-options">
-                    <KCheck label="비밀 답글" checked={replySecret} onChange={setReplySecret} />
-                    <KCheck label="답글 접기" checked={replyFolded} onChange={setReplyFolded} />
-                  </div>
-                  <div className="ci-row">
-                    <KInput autoFocus value={replyText} placeholder="답글 남기기..."
+                  <div className="loadb-compose loadb-compose-reply">
+                    <div className="loadb-compose-head">
+                      <span>REPLY · {replyLabel}</span>
+                      <div className="loadb-compose-actions">
+                        <button type="button" className="loadb-compose-close" aria-label="답글 취소"
+                          onClick={() => setReplyTo(null)}>×</button>
+                        <button type="button" className="loadb-compose-submit" aria-label="답글 등록"
+                          disabled={!replyText.trim()} onClick={postReply}>↑</button>
+                      </div>
+                    </div>
+                    <textarea autoFocus value={replyText} placeholder="답글을 남겨주세요."
                       onChange={e => setReplyText(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') postReply(); if (e.key === 'Escape') setReplyTo(null); }} />
-                    <button className="btn btn-dark" onClick={postReply}>REPLY</button>
-                    <button className="btn btn-ghost" onClick={() => setReplyTo(null)}>✕</button>
+                      onKeyDown={e => {
+                        if (e.key === 'Escape') setReplyTo(null);
+                        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); postReply(); }
+                      }} />
+                    <div className="loadb-compose-foot">
+                      <div className="cmt-options">
+                        <KCheck label="비밀 답글" checked={replySecret} onChange={setReplySecret} />
+                        <KCheck label="답글 접기" checked={replyFolded} onChange={setReplyFolded} />
+                      </div>
+                      <small>Ctrl/Cmd + Enter 등록</small>
+                    </div>
                   </div>
                 </div>
               )}
@@ -226,23 +244,30 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
           ))}
           {comments.length === 0 && <p className="hint">첫 댓글을 남겨보세요</p>}
         </div>
-        {/* 게스트 작성(방문자 허용) — 구분선 아래 GUEST 바 + 입력줄 세로 배치 */}
+        {/* 참고 이미지형 메모 입력 — 기능은 기존 비밀댓글/접기/게스트 권한을 그대로 사용 */}
         <div className={`cmt-input ${guestMode && canComment ? 'guest' : ''}`}>
-          {guestMode && canComment && (
-            <GuestIdBar name={gName} onName={setGName} />
-          )}
-          {canComment && (
-            <div className="cmt-options">
-              <KCheck label="비밀 댓글" checked={secret} onChange={setSecret} />
-              <KCheck label="댓글 접기" checked={foldComment} onChange={setFoldComment} />
+          {guestMode && canComment && <GuestIdBar name={gName} onName={setGName} />}
+          <div className="loadb-compose">
+            <div className="loadb-compose-head">
+              <span>MEMO</span>
+              <button type="button" className="loadb-compose-submit" aria-label="댓글 등록"
+                disabled={!canComment || !text.trim()} onClick={post}>↑</button>
             </div>
-          )}
-          <div className="ci-row" style={guestMode && canComment ? undefined : { display: 'contents' }}>
-            <KInput placeholder={canComment ? '댓글 남기기...' : '댓글은 로그인 후'} value={text}
-              disabled={!canComment}
+            <textarea placeholder={canComment ? '댓글을 남겨주세요.' : '댓글은 로그인 후 작성할 수 있습니다.'}
+              value={text} disabled={!canComment}
               onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') post(); }} />
-            <button className="btn btn-dark" disabled={!canComment} onClick={post}>POST</button>
+              onKeyDown={e => {
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) { e.preventDefault(); post(); }
+              }} />
+            <div className="loadb-compose-foot">
+              {canComment ? (
+                <div className="cmt-options">
+                  <KCheck label="비밀 댓글" checked={secret} onChange={setSecret} />
+                  <KCheck label="댓글 접기" checked={foldComment} onChange={setFoldComment} />
+                </div>
+              ) : <span />}
+              <small>Ctrl/Cmd + Enter 등록</small>
+            </div>
           </div>
         </div>
       </div>}

@@ -9,6 +9,7 @@ import { useLocalList, fmtDate } from '@/lib/postStore';
 import { BackupPost, BACKUP_SEED } from '@/lib/galleryStore';
 import { SearchBar, Pager } from '@/components/ui/Kit';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
+import { useBlobUrl } from '@/lib/blobStore';
 import { EditableDesc, PageTitle } from '@/components/ui/PageText';
 import { useBoardSettings, boardBadgeStyle } from '@/lib/boardStore';
 import { useMainStore } from '@/lib/mainStore';
@@ -16,6 +17,38 @@ import { useCardSort, mergeOrder } from '@/lib/cardSort';
 import { useMenuSettings } from '@/lib/menuStore';
 
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
+
+/** 갤러리 카드는 첫 이미지의 원본 비율을 그대로 사용한다. 목록 크롭값은 리스트 보기에만 유지. */
+function GalleryCardImage({ post }: { post: BackupPost }) {
+  const src = useBlobUrl(post.images[0]);
+  if (!src) {
+    return (
+      <div className={`gallery-card-placeholder ph ${post.phList[0] ?? 'cool'}`}>
+        <span>IMAGE</span>
+      </div>
+    );
+  }
+  return (
+    // IndexedDB object URL은 next/image 최적화 대상이 될 수 없어 원본 img로 표시한다.
+    // eslint-disable-next-line @next/next/no-img-element
+    <img src={src} alt={`${post.title} 대표 이미지`} loading="lazy" decoding="async" />
+  );
+}
+
+/** 리치 텍스트 설명을 카드용 한두 줄 일반 텍스트로 정리한다. */
+function galleryExcerpt(html: string): string {
+  return html
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 function BackupPageInner() {
   const router = useRouter();
@@ -79,33 +112,50 @@ function BackupPageInner() {
 
       {/* 갤러리/리스트 모두 렌더해 두고 display로만 전환 (v1.9) —
           전환 때마다 재마운트되며 이미지가 다시 로드·등장하던 깜빡임 제거 */}
-      <div className="g3" style={{ display: view === 'gal' && visible.length > 0 ? undefined : 'none' }}>
+      <div className="gallery-masonry" style={{ display: view === 'gal' && visible.length > 0 ? undefined : 'none' }}>
           {paged.map((p, si) => {
             const i = start + si;   // 정렬은 전체 기준 위치로
             const folded = p.fold && !unveiled[p.id];
+            const excerpt = galleryExcerpt(p.desc ?? '');
             return (
-              <div key={p.id} className="panel g-item" {...sort(i)}
+              <article key={p.id} className="panel gallery-post-card" {...sort(i)} role="link" tabIndex={editOn ? -1 : 0}
+                aria-label={`${p.title} 상세 보기`}
+                onKeyDown={e => {
+                  if (!folded && !editOn && (e.key === 'Enter' || e.key === ' ')) {
+                    e.preventDefault(); router.push(`/gallery/${p.id}`);
+                  }
+                }}
                 onClick={() => { if (!folded && !editOn) router.push(`/gallery/${p.id}`); }}>
-                <div className={`thumb ${folded ? 'veil' : ''}`}>
-                  <div style={{ position: 'absolute', inset: 0 }}>
-                    <CroppedBlobImg fileRef={p.images[0]} crop={p.thumbCrop} ph={p.phList[0] ?? 'cool'} />
-                  </div>
-                  {!folded && (
-                    <span className="typ" style={boardBadgeStyle(typeBadge(p.type))}>
-                      {typeBadge(p.type)?.label}
-                    </span>
-                  )}
+                <header className="gallery-card-head">
+                  <span className="gallery-card-avatar" aria-hidden="true">{(p.author ?? '').trim().charAt(0) || 'O'}</span>
+                  <b>{p.title}</b>
+                  <span className="gallery-card-marks" aria-hidden="true">◆ ◇</span>
+                </header>
+                <div className={`gallery-card-media ${folded ? 'veil' : ''}`}>
+                  <GalleryCardImage post={p} />
                   {folded && (
-                    <div className="cover" onClick={e => { e.stopPropagation(); setUnveiled(u => ({ ...u, [p.id]: true })); }}>
+                    <button type="button" className="cover" onClick={e => { e.stopPropagation(); setUnveiled(u => ({ ...u, [p.id]: true })); }}>
                       <div>
                         <b>{p.fold!.type === 'custom' ? (p.fold!.label || '접힘') : FOLD_LABEL[p.fold!.type]}</b><br />
                         <span>클릭하여 표시</span>
                       </div>
-                    </div>
+                    </button>
                   )}
                 </div>
-                <div className="info"><b>{p.title}</b><small>{meta(p)}</small></div>
-              </div>
+                <div className="gallery-card-actions">
+                  <span aria-label={`이미지 ${count(p)}장`}>▧ {count(p)}</span>
+                  <span style={boardBadgeStyle(typeBadge(p.type))}>{typeBadge(p.type)?.label}</span>
+                </div>
+                <div className="gallery-card-copy">
+                  <div className="gallery-card-byline">
+                    <b>{p.author}</b>
+                    <time dateTime={p.date}>{fmtDate(p.madeDate ? p.madeDate + 'T00:00:00' : p.date)}</time>
+                  </div>
+                  {p.category && <span className="gallery-card-tag">#{p.category}</span>}
+                  {excerpt && <p>{excerpt}</p>}
+                </div>
+                <footer className="gallery-card-foot">VIEW POST <span aria-hidden="true">→</span></footer>
+              </article>
             );
           })}
         </div>

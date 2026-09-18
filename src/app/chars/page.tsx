@@ -37,38 +37,40 @@ function CharsInner() {
   const sort = useCardSort(visible, next => setChars(mergeOrder(chars, next)), editOn && isAdmin);
 
   return (
-    <section className="page">
-      <div className="page-head">
-        <PageTitle>{sec.id === 'main' ? 'CHARACTERS' : sec.name}</PageTitle>
-        <EditableDesc k="chars-desc" def="운영자의 자캐 목록 · 3:4 두상 썸네일 · 클릭 시 프로필로 이동" />
-        <div className="head-actions">
+    <section className="page chars-page">
+      <div className="page-head chars-archive-head">
+        <div className="chars-archive-title">
+          <PageTitle>{sec.id === 'main' ? 'CHARACTER' : sec.name}</PageTitle>
+          <EditableDesc k="chars-desc" def="운영자의 자캐 목록 · 클릭 시 프로필로 이동" />
+        </div>
+        <div className="head-actions chars-archive-actions">
           <SearchBar onSearch={setQ} />
           {isAdmin && <button className="btn btn-dark" onClick={() => router.push('/chars/new' + secQuery(sec.id))}>＋ ADD CHARACTER</button>}
         </div>
       </div>
-      <div className="g5 chars-grid">
+
+      <div className="chars-grid">
         {visible.map((c, i) => {
           const priv = c.visibility === 'private';
           const sp = sort(i) as { style?: React.CSSProperties };
           return (
-            <div key={c.id} className="char-card" {...sort(i)}
+            <div key={c.id} className="char-card char-archive-card" {...sort(i)}
               style={{ ...(priv ? { opacity: .45 } : undefined), ...sp.style }}
               onClick={() => { if (!editOn) router.push(`/chars/${c.id}`); }}>
-              <div className="thumb" style={{ position: 'relative' }}>
+              <div className="thumb">
                 <CroppedBlobImg fileRef={charThumbRef(c)} crop={c.thumbCrop} ph={c.thumbClass}
                   label={priv ? '비공개' : '3:4'} />
-              </div>
-              <div className="nm">
-                {/* 리스트에서는 기본 폰트로 통일 — 개별 이름 폰트는 상세에서만 (사용자 확정).
-                    긴 이름은 두 줄로 갈라지지 않게 한 줄에 맞춰 줄인다 */}
-                <b style={{ minWidth: 0, flex: 1 }}><FitText>{c.name}</FitText></b>
-                <i style={{ background: c.color }} />
+                <div className="char-archive-shade" aria-hidden="true" />
+                <div className="char-archive-name">
+                  <b><FitText>{c.name}</FitText></b>
+                  {c.sub?.trim() && <small>{c.sub}</small>}
+                </div>
               </div>
             </div>
           );
         })}
         {visible.length === 0 && (
-          <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--page-desc)', fontSize: 13, padding: 40 }}>
+          <p className="chars-empty">
             표시할 캐릭터가 없습니다
           </p>
         )}

@@ -2195,3 +2195,81 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .roadview-item .loadb-chat.reply-depth.mine{margin-left:10px;margin-right:auto}
   .loadb-chat-bubble{padding:9px 11px}
 }
+
+
+/* ---------- 캐릭터 목록: 화보형 아카이브 ----------
+   사이트 배경은 기존 body/theme 배경을 그대로 사용하고 목록 레이아웃만 전시형으로 바꾼다. */
+.chars-page{max-width:1120px}
+.chars-archive-head{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:0;margin-bottom:28px;text-align:center
+}
+.chars-archive-title{display:grid;justify-items:center;gap:7px;width:100%}
+.chars-archive-title h1{
+  font-family:var(--serif);font-size:clamp(27px,3vw,38px);
+  font-weight:500;letter-spacing:.08em;line-height:1.1
+}
+.chars-archive-title p{max-width:620px;text-align:center}
+.chars-archive-actions{
+  position:static;width:100%;display:flex;justify-content:flex-end;
+  margin-top:18px;gap:8px
+}
+.chars-grid{
+  width:min(100%,880px);margin:0 auto;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px
+}
+.char-card.char-archive-card{
+  position:relative;overflow:hidden;border-radius:2px;
+  background:var(--panel);border:1px solid color-mix(in srgb,var(--line) 88%,transparent);
+  box-shadow:0 8px 22px color-mix(in srgb,var(--ink) 10%,transparent);
+  transition:transform .2s ease,box-shadow .2s ease,filter .2s ease
+}
+.char-card.char-archive-card:hover{
+  transform:translateY(-4px);
+  box-shadow:0 13px 30px color-mix(in srgb,var(--ink) 16%,transparent);
+  filter:brightness(1.025)
+}
+.char-archive-card .thumb{position:relative;aspect-ratio:3/4;overflow:hidden;background:var(--panel)}
+.char-archive-card .thumb img{
+  width:100%;height:100%;object-fit:cover;
+  transition:transform .35s ease
+}
+.char-archive-card:hover .thumb img{transform:scale(1.025)}
+.char-archive-shade{
+  position:absolute;z-index:2;inset:auto 0 0;height:42%;
+  pointer-events:none;
+  background:linear-gradient(to bottom,transparent 0%,color-mix(in srgb,var(--panel-solid) 45%,transparent) 42%,var(--panel-solid) 92%)
+}
+.char-archive-name{
+  position:absolute;z-index:3;left:10px;right:10px;bottom:10px;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-end;
+  min-width:0;text-align:center;pointer-events:none
+}
+.char-archive-name b{
+  width:100%;min-width:0;color:var(--ink);
+  font-family:var(--serif);font-size:calc(15px*var(--fs,1));font-weight:600;
+  letter-spacing:.02em;line-height:1.2;white-space:nowrap;overflow:hidden
+}
+.char-archive-name small{
+  display:block;max-width:100%;margin-top:3px;color:var(--faint);
+  font-family:var(--serif);font-size:calc(8px*var(--fs,1));font-weight:400;
+  letter-spacing:.12em;line-height:1.2;text-transform:uppercase;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.chars-empty{
+  grid-column:1/-1;text-align:center;color:var(--page-desc);
+  font-size:13px;padding:48px 20px
+}
+
+@media(max-width:960px){
+  .chars-grid{width:min(100%,700px);grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+}
+@media(max-width:620px){
+  .chars-archive-head{margin-bottom:20px}
+  .chars-archive-actions{margin-top:14px;justify-content:center}
+  .chars-grid{width:100%;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+  .char-archive-name{left:7px;right:7px;bottom:8px}
+  .char-archive-name b{font-size:calc(13px*var(--fs,1))}
+  .char-archive-name small{font-size:calc(7px*var(--fs,1))}
+}

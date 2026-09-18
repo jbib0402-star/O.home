@@ -105,42 +105,50 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     const canRead = !c.secret || isAdmin || (!!viewerId
       && (c.authorId === viewerId || item.authorId === viewerId || parent?.authorId === viewerId));
     const isFolded = !!c.folded && !expanded.has(c.id);
+    const ownComment = !!viewerId && c.authorId === viewerId;
     return (
-      <div className={`cmt ${replyDepth ? 'reply-depth' : ''} ${c.secret ? 'secret' : ''}`} key={c.id}>
-        <b>{c.author}</b><small>{fmtDate(c.date)}</small>
-        {c.secret && <small className="cmt-secret-mark">🔒 비밀</small>}
-        {canRead && editCid !== c.id && (
-          <>
-            {canComment && (
-              <button className="cmt-reply-action" onClick={() => openReply(c, threadId)}>답글</button>
-            )}
-            {editLevel(c) !== null && (
-              <small style={{ cursor: 'var(--cur-pointer,pointer)', color: 'var(--accent)', marginLeft: 8 }}
-                onClick={() => askManage(c, 'edit')}>수정</small>
-            )}
-            {delLevel(c) !== null && (
-              <small style={{ cursor: 'var(--cur-pointer,pointer)', marginLeft: 6 }}
-                onClick={() => askManage(c, 'del')}>삭제</small>
-            )}
-          </>
-        )}
-        {!canRead ? (
-          <p className="cmt-hidden">🔒 비밀 댓글입니다.</p>
-        ) : editCid === c.id ? (
-          <div style={{ display: 'flex', gap: 6, marginTop: 5 }}>
-            <KInput value={editText} autoFocus onChange={e => setEditText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditCid(null); }}
-              style={{ flex: 1 }} />
-            <button className="btn btn-dark" style={{ padding: '4px 11px', fontSize: 10.5 }} onClick={saveEdit}>SAVE</button>
-            <button className="btn btn-ghost" style={{ padding: '4px 9px', fontSize: 10.5 }} onClick={() => setEditCid(null)}>✕</button>
-          </div>
-        ) : isFolded ? (
-          <button className="cmt-fold-button" onClick={() => setExpanded(prev => new Set(prev).add(c.id))}>
-            ▸ 접힌 댓글입니다 — 펼치기
-          </button>
-        ) : (
-          <p>{c.text}</p>
-        )}
+      <div className={`cmt loadb-chat ${replyDepth ? 'reply-depth' : ''} ${c.secret ? 'secret' : ''} ${ownComment ? 'mine' : 'other'}`} key={c.id}>
+        <div className="loadb-chat-meta">
+          <b>{c.author}</b>
+          {c.secret && <small className="cmt-secret-mark">🔒 비밀</small>}
+        </div>
+
+        <div className="loadb-chat-bubble">
+          {!canRead ? (
+            <p className="cmt-hidden">🔒 비밀 댓글입니다.</p>
+          ) : editCid === c.id ? (
+            <div className="loadb-chat-edit">
+              <KInput value={editText} autoFocus onChange={e => setEditText(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter') saveEdit(); if (e.key === 'Escape') setEditCid(null); }}
+                style={{ flex: 1 }} />
+              <button className="btn btn-dark" onClick={saveEdit}>SAVE</button>
+              <button className="btn btn-ghost" onClick={() => setEditCid(null)}>✕</button>
+            </div>
+          ) : isFolded ? (
+            <button className="cmt-fold-button" onClick={() => setExpanded(prev => new Set(prev).add(c.id))}>
+              ▸ 접힌 댓글입니다 — 펼치기
+            </button>
+          ) : (
+            <p>{c.text}</p>
+          )}
+        </div>
+
+        <div className="loadb-chat-foot">
+          <small className="loadb-chat-date">{fmtDate(c.date)}</small>
+          {canRead && editCid !== c.id && (
+            <span className="loadb-chat-tools">
+              {canComment && (
+                <button className="cmt-reply-action" onClick={() => openReply(c, threadId)}>답글</button>
+              )}
+              {editLevel(c) !== null && (
+                <button onClick={() => askManage(c, 'edit')}>수정</button>
+              )}
+              {delLevel(c) !== null && (
+                <button onClick={() => askManage(c, 'del')}>삭제</button>
+              )}
+            </span>
+          )}
+        </div>
       </div>
     );
   };

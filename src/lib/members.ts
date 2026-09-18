@@ -8,15 +8,15 @@ export interface MemberLite { id: string; nickname: string; role?: 'admin' | 'me
 /** 로컬(브라우저) 계정 목록 — 서버 없이 개발할 때 */
 export function memberPool(): MemberLite[] {
   const base: MemberLite[] = [
-    { id: 'admin', nickname: '관리자' },
-    { id: 'guest', nickname: '지인회원' },
+    { id: 'admin', nickname: '관리자', role: 'admin' },
+    { id: 'guest', nickname: '지인회원', role: 'member' },
   ];
   try {
     const reg = JSON.parse(localStorage.getItem('ohome.mockreg.v1') ?? '{}') as
       Record<string, { user?: MemberLite }>;
     for (const k of Object.keys(reg)) {
       const u = reg[k]?.user;
-      if (u && !base.some(b => b.id === u.id)) base.push({ id: u.id, nickname: u.nickname });
+      if (u && !base.some(b => b.id === u.id)) base.push({ id: u.id, nickname: u.nickname, role: u.role });
     }
   } catch { /* 무시 */ }
   return base;

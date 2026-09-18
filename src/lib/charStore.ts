@@ -29,7 +29,9 @@ export interface CharTab {
 export interface Character {
   id: string;
   name: string;          // 대표 이름 (전용 폰트 적용 대상)
-  sub: string;           // 한글명 · 소속 한 줄
+  altName?: string;      // 영문명/한자명 등 목록·상세에 함께 표시할 보조 이름
+  sub: string;           // 한 줄 소개
+  quote?: string;        // 캐릭터 대표 한마디/대사
   color: string;         // 대표 테마색 (말풍선·리스트 점)
   // 상세 페이지 테마 (v1.9 사용자 확정) — custom이면 대표 테마색으로 홈 팔레트 임시 전환 (4.18 방식)
   themeMode?: 'default' | 'custom';
@@ -84,7 +86,9 @@ export interface AuCharProfile {
   outfits?: OutfitFullArt[];
   arts?: string[];
   name?: string;
+  altName?: string;
   sub?: string;
+  quote?: string;
   color?: string;
   themeMode?: 'default' | 'custom';
   colors?: ColorChip[];
@@ -117,7 +121,9 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
   return {
     ...c,
     ...(p.name !== undefined ? { name: p.name } : {}),
+    ...(p.altName !== undefined ? { altName: p.altName } : {}),
     ...(p.sub !== undefined ? { sub: p.sub } : {}),
+    ...(p.quote !== undefined ? { quote: p.quote } : {}),
     ...(p.color !== undefined ? { color: p.color } : {}),
     ...(p.themeMode !== undefined ? { themeMode: p.themeMode } : {}),
     ...(p.colors !== undefined ? { colors: p.colors } : {}),

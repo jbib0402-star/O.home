@@ -31,7 +31,10 @@ function CharsInner() {
   const visible = chars
     .filter(c => c.own)
     .filter(c => isAdmin || c.visibility === 'public')
-    .filter(c => !q || c.name.toLowerCase().includes(q.toLowerCase()) || c.sub.includes(q));
+    .filter(c => !q
+      || c.name.toLowerCase().includes(q.toLowerCase())
+      || (c.altName ?? '').toLowerCase().includes(q.toLowerCase())
+      || c.sub.toLowerCase().includes(q.toLowerCase()));
 
   // 편집모드 카드 드래그 정렬 (v1.9)
   const sort = useCardSort(visible, next => setChars(mergeOrder(chars, next)), editOn && isAdmin);
@@ -63,7 +66,7 @@ function CharsInner() {
                 <div className="char-archive-shade" aria-hidden="true" />
                 <div className="char-archive-name">
                   <b><FitText>{c.name}</FitText></b>
-                  {c.sub?.trim() && <small>{c.sub}</small>}
+                  {c.altName?.trim() && <small>{c.altName}</small>}
                 </div>
               </div>
             </div>

@@ -2014,7 +2014,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-art-frame .profile-art-contain img{object-position:center bottom}
 .profile-editorial-art-frame>div:not(.profile-art-contain){width:100%;height:100%}
 
-.profile-outfit-switch{position:absolute;z-index:8;left:26px;right:26px;bottom:24px;display:flex;align-items:center;gap:12px;min-width:0}
+.profile-outfit-switch{position:absolute;z-index:8;top:58px;right:28px;display:flex;align-items:center;justify-content:flex-end;gap:12px;max-width:calc(100% - 56px);min-width:0}
 .profile-outfit-label{flex:0 0 auto;font-family:var(--serif);font-size:8px;font-weight:700;letter-spacing:.2em;color:var(--faint)}
 .profile-outfit-switch>div{display:flex;gap:6px;min-width:0;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
 .profile-outfit-switch button{flex:0 0 auto;padding:6px 13px;border:1px solid color-mix(in srgb,var(--line) 92%,transparent);border-radius:999px;background:color-mix(in srgb,var(--panel-solid) 70%,transparent);color:var(--sub);font-size:9px;letter-spacing:.04em;backdrop-filter:blur(9px);transition:.16s}
@@ -2068,7 +2068,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-stage-kicker{right:16px;top:16px}
   .profile-editorial-watermark{font-size:clamp(56px,19vw,92px)}
   .profile-editorial-art-frame{inset:52px 2% 88px}
-  .profile-outfit-switch{left:14px;right:14px;bottom:17px;gap:8px}
+  .profile-outfit-switch{top:48px;left:14px;right:14px;bottom:auto;justify-content:flex-end;gap:8px;max-width:none}
   .profile-outfit-switch button{padding:5px 10px;font-size:8.5px}
   .profile-editorial-info{padding:34px 20px 76px}
   .profile-editorial-info .profile-info-head{align-items:flex-start;flex-direction:column;gap:10px}

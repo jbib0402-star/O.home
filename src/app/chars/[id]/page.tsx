@@ -222,16 +222,19 @@ function CharDetailInner() {
   };
 
   const editHref = auKey ? `/chars/${ch.id}/edit?au=${encodeURIComponent(auKey)}` : `/chars/${ch.id}/edit`;
-  // 의상 전신이 등록되면 이름 버튼으로 전환한다. 구 프로필은 기존 아트를 자동으로 「기본/ART n」으로 보여 호환한다.
+  // 대표 전신은 항상 첫 「기본」 탭으로 유지하고, 별도로 추가한 의상 전신만 그 옆에 붙인다.
+  // 기존 arts의 2장째 이후는 '추가 아트'이므로 의상 버튼으로 만들지 않는다.
   const legacyArts = eff.arts && eff.arts.length > 0
     ? eff.arts
     : eff.artId ? [eff.artId] : eff.artUrl ? [eff.artUrl] : [];
-  const usingNamedOutfits = (eff.outfits?.length ?? 0) > 0;
-  const outfitChoices = usingNamedOutfits
-    ? eff.outfits!
-    : legacyArts.map((imgId, i) => ({ id: 'legacy-' + i, label: i === 0 ? '기본' : 'ART ' + (i + 1), imgId }));
+  const baseFullArt = legacyArts[0];
+  const outfitChoices = [
+    ...(baseFullArt ? [{ id: 'base', label: '기본', imgId: baseFullArt }] : []),
+    ...(eff.outfits ?? []),
+  ];
   const activeOutfitIdx = outfitChoices.length > 0 ? Math.min(artIdx, outfitChoices.length - 1) : 0;
   const activeOutfit = outfitChoices[activeOutfitIdx];
+  const showingBaseFullArt = activeOutfit?.id === 'base';
 
   return (
     <section className="page-char-detail">
@@ -335,12 +338,12 @@ function CharDetailInner() {
               <div className={'profile-editorial-art-frame ' + (!activeOutfit ? 'ph ' + ch.thumbClass : '')}
                 ref={artBoxRef}
                 onContextMenu={e => {
-                  if (!canEdit || usingNamedOutfits || activeOutfitIdx !== 0 || !legacyArts[0]) return;
+                  if (!canEdit || !showingBaseFullArt || !baseFullArt) return;
                   e.preventDefault();
-                  setArtCtx({ x: e.clientX, y: e.clientY, ref: legacyArts[0] });
+                  setArtCtx({ x: e.clientX, y: e.clientY, ref: baseFullArt });
                 }}>
                 {activeOutfit ? (
-                  !usingNamedOutfits && activeOutfitIdx === 0 && eff.artCrop ? (
+                  showingBaseFullArt && eff.artCrop ? (
                     <CroppedBlobImg fileRef={activeOutfit.imgId}
                       crop={eff.artCrop} ph={ch.thumbClass} label="CHARACTER FULL ART" />
                   ) : (

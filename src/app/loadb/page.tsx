@@ -66,6 +66,9 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
 
   const folded = item.fold && !open;
   const secretLocked = !!item.secret && !isAdmin && item.authorId !== viewerId;
+  // "접어서 올리기"로 저장된 미디어만 그라데이션 미리보기를 사용한다.
+  // 수위 주의 커버와 비밀글 잠금이 먼저 보여야 하므로 두 상태에서는 중첩하지 않는다.
+  const mediaPreviewCollapsed = mediaCollapsed && !folded && !secretLocked;
   const imgSrc = useBlobUrl(secretLocked ? undefined : (item.imgId ?? item.imgUrl));
   const youtubeSrc = item.youtubeId
     ? `https://www.youtube-nocookie.com/embed/${item.youtubeId}?rel=0`
@@ -159,17 +162,11 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     );
   };
   return (
-    <div className={`panel roadview-item ${mediaCollapsed ? 'is-media-collapsed' : ''}`}>
-      {/* 그림별 상단 번호 영역 + 업로드한 그림/영상만 접는 보기 옵션 */}
+    <div className={`panel roadview-item ${mediaPreviewCollapsed ? 'is-media-collapsed' : ''}`}>
+      {/* 그림별 상단 번호 영역 */}
       <div className="rv-head">
         <b>No.{String(item.no ?? 0).padStart(3, '0')}</b>
         {(item.secret || item.visibility === 'private') && <span className="rv-secret-badge">🔒 SECRET</span>}
-        <button type="button" className="rv-collapse-btn"
-          aria-expanded={!mediaCollapsed}
-          aria-controls={`road-media-${item.id}`}
-          onClick={() => setMediaCollapsed(v => !v)}>
-          {mediaCollapsed ? '▾ 미디어 펼치기' : '▴ 미디어 접기'}
-        </button>
       </div>
       {/* 투명 PNG도 카드색 위에 자연스럽게 — 어두운 하드코딩 제거 (v1.9 사용자 피드백) */}
       <div id={`road-media-${item.id}`} className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
@@ -201,6 +198,26 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
               <span>클릭하여 표시</span>
             </div>
           </div>
+        )}
+        {mediaPreviewCollapsed && (
+          <div className="rv-media-fade">
+            <button type="button" className="rv-media-open"
+              aria-expanded="false"
+              aria-controls={`road-media-${item.id}`}
+              onClick={() => setMediaCollapsed(false)}>
+              <b>OPEN</b>
+              <span>전체 이미지 보기</span>
+            </button>
+          </div>
+        )}
+        {!!item.mediaFolded && !mediaCollapsed && !folded && !secretLocked && (
+          <button type="button" className="rv-media-close"
+            aria-expanded="true"
+            aria-controls={`road-media-${item.id}`}
+            onClick={() => setMediaCollapsed(true)}>
+            <b>CLOSE</b>
+            <span>이미지 접기</span>
+          </button>
         )}
         {(canEditItem || canDeleteItem) && (
           /* 이미지에 마우스를 올렸을 때만 표시 (.rv-actions — globals.css) · 수정은 작성자만, 삭제는 관리자도 */
@@ -508,7 +525,7 @@ function RoadviewPageInner() {
               style={{ width: 90, textAlign: 'center' }} />
           </div>
           <KCheck label="수위 주의 접기 (블러 + 클릭 표시)" checked={eAdult} onChange={setEAdult} />
-          <KCheck label="처음부터 미디어 접기 (방문자는 눌러서 펼침)" checked={eMediaFolded} onChange={setEMediaFolded} />
+          <KCheck label="그라데이션 미리보기로 접기 (OPEN으로 펼침)" checked={eMediaFolded} onChange={setEMediaFolded} />
           <KCheck label="비밀 업로드 (작성자와 관리자만 열람)" checked={eSecret} onChange={setESecret} />
         </div>
       </Modal>

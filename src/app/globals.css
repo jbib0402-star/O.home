@@ -1980,3 +1980,104 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .quick-music-page .music-deck,.quick-music-page .music-list{backdrop-filter:blur(13px);box-shadow:0 16px 45px rgba(22,35,27,.12)}
 .quick-expiry{margin:4px 0 0;color:var(--accent);font-size:10px;font-weight:700;letter-spacing:.1em;font-variant-numeric:tabular-nums}
 .quick-denied{max-width:520px;margin:80px auto;padding:48px;text-align:center;color:var(--faint)}
+
+
+/* ---------- 캐릭터 상세 풀페이지 화보형 + 의상 전신 (v2.1) ---------- */
+body:has(.page-char-detail) .topbar{display:none}
+body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
+.page-char-detail{width:100%;max-width:none!important;min-height:100vh;padding:0 0 76px!important;position:relative;overflow:visible}
+.profile-editorial{position:relative;display:grid;grid-template-columns:68px minmax(0,1.15fr) minmax(420px,.85fr);min-height:100vh;isolation:isolate;background:color-mix(in srgb,var(--bg-g1) 64%,var(--panel-solid) 36%)}
+.profile-editorial::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
+  radial-gradient(900px 620px at 34% 28%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 66%),
+  linear-gradient(145deg,color-mix(in srgb,var(--bg-g1) 72%,transparent),color-mix(in srgb,var(--bg-g2) 54%,transparent))}
+.profile-back{position:fixed;left:92px;top:28px;z-index:45;padding:8px 11px;border-radius:999px;font-family:var(--serif);font-size:11px;letter-spacing:.06em;color:var(--sub);background:color-mix(in srgb,var(--panel-solid) 72%,transparent);border:1px solid color-mix(in srgb,var(--line) 82%,transparent);backdrop-filter:blur(10px);transition:.18s}
+.profile-back:hover{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));transform:translateX(-2px)}
+
+.profile-editorial-rail{grid-column:1;grid-row:1;align-self:start;position:sticky!important;top:0!important;height:100vh;padding:22px 0!important;z-index:35;background:color-mix(in srgb,var(--panel-solid) 84%,var(--bg-g2) 16%);border-right:1px solid color-mix(in srgb,var(--line) 85%,transparent);backdrop-filter:blur(14px);overflow-y:auto}
+.profile-editorial-rail .side-icon-group{gap:8px}
+.profile-editorial-rail .side-icon-divider{background:var(--line);margin:4px auto}
+.profile-editorial-rail button{width:42px;height:42px;border-radius:10px}
+.profile-editorial-rail .side-au-face{inset:3px;border-radius:8px}
+
+.profile-editorial-stage{grid-column:2;grid-row:1;position:sticky;top:0;align-self:start;height:100vh;min-height:620px;overflow:hidden;isolation:isolate;border-right:1px solid color-mix(in srgb,var(--line) 82%,transparent);
+  background:
+    radial-gradient(circle at 58% 34%,color-mix(in srgb,var(--panel-solid) 68%,transparent),transparent 32%),
+    radial-gradient(circle at 44% 56%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 48%),
+    linear-gradient(145deg,color-mix(in srgb,var(--bg-g1) 88%,var(--panel-solid) 12%),color-mix(in srgb,var(--bg-g2) 72%,var(--panel-solid) 28%))}
+.profile-editorial-stage::before{content:"";position:absolute;left:50%;top:48%;width:min(58vw,680px);aspect-ratio:1;border-radius:50%;border:1px solid color-mix(in srgb,var(--accent) 12%,transparent);transform:translate(-50%,-50%);pointer-events:none}
+.profile-stage-kicker{position:absolute;right:28px;top:28px;z-index:5;display:flex;align-items:center;gap:9px;font-size:8px;letter-spacing:.16em;color:var(--faint);text-transform:uppercase}
+.profile-stage-kicker b{font-size:9px;color:var(--accent);font-weight:700}
+.profile-editorial-watermark{position:absolute;left:50%;top:50%;z-index:0;max-width:92%;transform:translate(-50%,-50%) rotate(-90deg);font-family:var(--serif);font-size:clamp(74px,10vw,158px);font-weight:600;letter-spacing:.12em;line-height:.82;white-space:nowrap;color:color-mix(in srgb,var(--ink) 4%,transparent);pointer-events:none;user-select:none}
+.profile-editorial-art-frame{position:absolute;z-index:2;inset:76px 4.5% 92px;display:grid;place-items:center;overflow:hidden;min-width:0}
+.profile-editorial-art-frame>.ph,.profile-editorial-art-frame.ph{width:100%;height:100%}
+.profile-editorial-art-frame .profile-art-contain{inset:0}
+.profile-editorial-art-frame .profile-art-contain img{object-position:center bottom}
+.profile-editorial-art-frame>div:not(.profile-art-contain){width:100%;height:100%}
+
+.profile-outfit-switch{position:absolute;z-index:8;left:26px;right:26px;bottom:24px;display:flex;align-items:center;gap:12px;min-width:0}
+.profile-outfit-label{flex:0 0 auto;font-family:var(--serif);font-size:8px;font-weight:700;letter-spacing:.2em;color:var(--faint)}
+.profile-outfit-switch>div{display:flex;gap:6px;min-width:0;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
+.profile-outfit-switch button{flex:0 0 auto;padding:6px 13px;border:1px solid color-mix(in srgb,var(--line) 92%,transparent);border-radius:999px;background:color-mix(in srgb,var(--panel-solid) 70%,transparent);color:var(--sub);font-size:9px;letter-spacing:.04em;backdrop-filter:blur(9px);transition:.16s}
+.profile-outfit-switch button:hover{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
+.profile-outfit-switch button.on{background:var(--btn-dark,var(--ink));border-color:var(--btn-dark,var(--ink));color:var(--btn-dark-fg,#fff)}
+
+.profile-editorial-info{grid-column:3;grid-row:1;min-width:0;min-height:100vh;padding:clamp(76px,8vh,118px) clamp(34px,4.2vw,76px) 100px;background:color-mix(in srgb,var(--panel-solid) 68%,transparent);backdrop-filter:blur(14px);font-family:var(--sans)}
+.profile-editorial-info .profile-info-head{margin-bottom:18px;padding-bottom:0}
+.profile-editorial-info .profile-name{font-size:clamp(38px,var(--character-name-size,48px),72px);letter-spacing:.08em;line-height:1.04}
+.profile-editorial-info .profile-sub{margin-top:11px;max-width:52ch}
+.profile-editorial-info .profile-palette{margin-top:18px}
+.profile-editorial-info .profile-editorial-spec{grid-template-columns:repeat(auto-fit,minmax(96px,1fr));gap:18px 22px;margin-top:30px;padding:20px 0}
+.profile-editorial-info .profile-editorial-spec .spec-item{min-width:0}
+.profile-editorial-info .profile-copy{padding-top:34px}
+.profile-editorial-info .profile-section-label{margin-bottom:16px;color:var(--accent)}
+.profile-editorial-info .prose{max-width:70ch;line-height:1.95}
+.profile-tab-section{padding-top:26px}
+.profile-tab-section>.sub{margin-bottom:20px}
+.profile-tab-section .profile-tab-copy{padding-top:24px}
+
+.profile-editorial .profile-au-empty{grid-column:2/-1;grid-row:1;align-self:center;justify-self:center;width:min(620px,calc(100% - 64px));padding:58px;text-align:center;background:color-mix(in srgb,var(--panel-solid) 86%,transparent);box-shadow:none}
+.profile-au-empty-title{font-family:var(--serif);font-size:28px;letter-spacing:.14em;margin-bottom:9px}
+.profile-editorial .profile-au-empty p{font-size:13px;color:var(--faint);line-height:1.7;margin-bottom:18px}
+
+/* 캐릭터 편집 — 의상별 전신 행 */
+.char-outfit-edit-row{display:grid;grid-template-columns:auto 62px minmax(120px,1fr) auto auto;align-items:center;gap:9px;width:100%;padding:5px 0}
+.char-outfit-edit-preview{width:62px;aspect-ratio:3/4;border-radius:7px;overflow:hidden;position:relative;display:grid;place-items:center;flex-shrink:0;background:var(--crop-bg);color:var(--faint);font-size:9px}
+.char-outfit-edit-preview>div,.char-outfit-edit-preview img{width:100%;height:100%}
+
+/* 중간 화면 — 레일을 상단 두 줄 내비로 바꾸고 전신/정보를 세로로 쌓는다. */
+@media(max-width:960px){
+  body:has(.page-char-detail) .topbar{display:none}
+  .profile-editorial{grid-template-columns:1fr;min-height:0}
+  .profile-back{left:auto;right:12px;top:11px;background:color-mix(in srgb,var(--panel-solid) 90%,transparent)}
+  .profile-editorial-rail{grid-column:1;grid-row:1;position:sticky!important;top:0!important;width:100%;height:auto;padding:8px 72px 8px 10px!important;display:flex!important;flex-direction:column!important;gap:5px!important;overflow:hidden;z-index:40;border-right:0;border-bottom:1px solid var(--line)}
+  .profile-editorial-rail .side-icon-group{width:100%;flex-direction:row!important;justify-content:flex-start;overflow-x:auto;padding:1px;scrollbar-width:thin}
+  .profile-editorial-rail .side-icon-label{flex:0 0 38px;text-align:center}
+  .profile-editorial-rail .side-icon-divider{width:100%;height:1px;margin:0}
+  .profile-editorial-rail button{flex:0 0 40px;width:40px;height:40px}
+  .profile-editorial-stage{grid-column:1;grid-row:2;position:relative;top:auto;height:min(78vh,760px);min-height:600px;border-right:0;border-bottom:1px solid var(--line)}
+  .profile-editorial-art-frame{inset:60px 5% 86px}
+  .profile-editorial-info{grid-column:1;grid-row:3;min-height:0;padding:48px clamp(24px,6vw,64px) 90px}
+  .profile-editorial .profile-au-empty{grid-column:1;grid-row:2;margin:58px auto}
+}
+@media(max-width:620px){
+  .page-char-detail{padding-bottom:64px!important}
+  .profile-back{font-size:9px;padding:7px 9px}
+  .profile-editorial-rail{padding-right:66px!important}
+  .profile-editorial-rail button{flex-basis:36px;width:36px;height:36px;border-radius:9px}
+  .profile-editorial-stage{height:auto;min-height:520px;aspect-ratio:3/4}
+  .profile-stage-kicker{right:16px;top:16px}
+  .profile-editorial-watermark{font-size:clamp(56px,19vw,92px)}
+  .profile-editorial-art-frame{inset:52px 2% 88px}
+  .profile-outfit-switch{left:14px;right:14px;bottom:17px;gap:8px}
+  .profile-outfit-switch button{padding:5px 10px;font-size:8.5px}
+  .profile-editorial-info{padding:34px 20px 76px}
+  .profile-editorial-info .profile-info-head{align-items:flex-start;flex-direction:column;gap:10px}
+  .profile-editorial-info .profile-info-actions{width:100%;justify-content:flex-start}
+  .profile-editorial-info .profile-name{font-size:clamp(34px,12vw,var(--character-name-size,48px))}
+  .profile-editorial-info .profile-editorial-spec{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}
+  .profile-editorial .profile-au-empty{width:calc(100% - 28px);padding:38px 20px;margin:36px auto}
+  .char-outfit-edit-row{grid-template-columns:auto 56px minmax(0,1fr) auto;gap:7px}
+  .char-outfit-edit-preview{width:56px}
+  .char-outfit-edit-row>.btn{grid-column:3/5;justify-self:start}
+  .char-outfit-edit-row>.fx{grid-column:4;grid-row:1}
+}

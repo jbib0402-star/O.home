@@ -42,7 +42,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
 }) {
   const toast = useToast();
   const [open, setOpen] = useState(false);
-  const [postCollapsed, setPostCollapsed] = useState(false); // 이 로드비 카드 전체 접기/펼치기 (화면 상태)
+  const [mediaCollapsed, setMediaCollapsed] = useState(false); // 업로드한 그림/영상만 접기/펼치기 (화면 상태)
   const [text, setText] = useState('');
   const [gName, setGName] = useState('');               // 게스트 닉네임
   const [secret, setSecret] = useState(false);
@@ -153,19 +153,20 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     );
   };
   return (
-    <div className={`panel roadview-item ${postCollapsed ? 'is-collapsed' : ''}`}>
-      {/* 그림별 상단 번호 영역 + 방문자가 이 카드 전체를 접어 둘 수 있는 보기 옵션 */}
+    <div className={`panel roadview-item ${mediaCollapsed ? 'is-media-collapsed' : ''}`}>
+      {/* 그림별 상단 번호 영역 + 업로드한 그림/영상만 접는 보기 옵션 */}
       <div className="rv-head">
         <b>No.{String(item.no ?? 0).padStart(3, '0')}</b>
         {(item.secret || item.visibility === 'private') && <span className="rv-secret-badge">🔒 SECRET</span>}
         <button type="button" className="rv-collapse-btn"
-          aria-expanded={!postCollapsed}
-          onClick={() => setPostCollapsed(v => !v)}>
-          {postCollapsed ? '▾ 펼치기' : '▴ 접기'}
+          aria-expanded={!mediaCollapsed}
+          aria-controls={`road-media-${item.id}`}
+          onClick={() => setMediaCollapsed(v => !v)}>
+          {mediaCollapsed ? '▾ 미디어 펼치기' : '▴ 미디어 접기'}
         </button>
       </div>
       {/* 투명 PNG도 카드색 위에 자연스럽게 — 어두운 하드코딩 제거 (v1.9 사용자 피드백) */}
-      <div className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
+      <div id={`road-media-${item.id}`} className={`art ${folded ? 'veil' : ''}`} style={{ background: 'var(--panel-solid)' }}>
         {secretLocked ? (
           <div className="rv-secret-cover" role="status">
             <b>🔒 비밀글입니다</b>

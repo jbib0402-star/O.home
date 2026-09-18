@@ -35,7 +35,9 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
     label,
     source: 'character',
     name: '',
+    altName: '',
     sub: '',
+    quote: '',
     basicHtml: '',
     tabs: [],
     specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
@@ -390,7 +392,9 @@ function CharDetailInner() {
                 '--character-name-size': (eff.nameSize ?? 38) + 'px',
                 fontWeight: 500,
               } as React.CSSProperties}>{eff.name}</div>
+              {eff.altName && <div className="profile-alt-name">{eff.altName}</div>}
               {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
+              {eff.quote && <div className="profile-quote">“{eff.quote}”</div>}
 
               {eff.colors.length > 0 && (
                 <div className="profile-palette" aria-label="테마 컬러">

@@ -4,6 +4,13 @@ export type Visibility = 'public' | 'member' | 'private'; // 공개범위 3단�
 
 export interface ColorChip { hex: string; label: string }
 
+/** 상세 프로필에서 버튼으로 전환하는 의상별 전신. ORIGINAL/AU가 각자 독립적으로 소유한다. */
+export interface OutfitFullArt {
+  id: string;
+  label: string;
+  imgId: string;
+}
+
 /** 테마컬러 점 테두리 (v2.0 사용자 요청) — 미지정이면 지금까지의 옅은 테두리 그대로,
  *  'none'이면 없음, hex면 그 색으로 1px */
 export const chipBorder = (bd?: string): string =>
@@ -47,6 +54,7 @@ export interface Character {
   /** 상세 페이지 중앙 아트의 위치 (v2.0) — 리스트 썸네일과 보이는 크기·비율이 달라
    *  같은 크롭을 쓰면 원하는 부분이 안 나온다. 따로 잡으면 상세에서는 이 값을 쓴다. */
   artCrop?: import("@/components/ui/CropEditor").CropValue;
+  outfits?: OutfitFullArt[]; // 의상별 전신 — 상세에서 이름 버튼으로 전환 (없으면 기존 대표 전신을 기본으로 사용)
   arts?: string[];       // 전신/아트 목록 (IndexedDB — 첫 장이 상세 대표 전신)
   artId?: string;        // (구) 단일 풀 아트
   artUrl?: string;       // (구) 풀 아트 URL
@@ -73,6 +81,7 @@ export interface AuCharProfile {
   label?: string;
   source?: 'character';
   basicHtml?: string;
+  outfits?: OutfitFullArt[];
   arts?: string[];
   name?: string;
   sub?: string;
@@ -118,6 +127,7 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     ...(p.tabs !== undefined ? { tabs: p.tabs } : {}),
     ...(p.basicHtml !== undefined ? { basicHtml: p.basicHtml } : {}),
     // 이미지는 **물려받지 않는다** (v2.0 사용자 요청) — AU 프로필에 안 넣었으면 비워 둔다.
+    outfits: p.outfits ?? [],
     // 글씨(이름·소개·스펙)는 AU에서 안 고쳤으면 base를 쓰는 게 자연스럽지만, 그림은 다르다:
     // 학원 AU를 만들어 놓고 그림을 아직 안 넣었는데 원본 그림이 그대로 떠 있으면
     // 그 AU의 그림인 줄 알게 된다. 자관 전신이 이미 같은 규칙이다(「AU는 자기 전신만」).

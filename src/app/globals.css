@@ -1735,12 +1735,16 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .loadb-compose-reply{margin-top:2px}
 .cmt-reply-form .loadb-compose textarea{min-height:64px}
 
-/* 로드비 미디어 접기 — 그림/영상만 숨기고 댓글·입력창은 그대로 유지 */
+/* 로드비 미디어 접기 — 긴 그림/영상만 짧게 접고 댓글 칼럼은 원래 오른쪽 자리에 고정 */
 .roadview-item .rv-head{display:flex;align-items:center;gap:8px}
 .rv-collapse-btn{margin-left:auto;padding:4px 8px;border-radius:6px;color:var(--faint);font-size:calc(9.5px*var(--fs,1));letter-spacing:.02em;transition:.14s}
 .rv-collapse-btn:hover{background:var(--soft);color:var(--ink)}
-.roadview-item.is-media-collapsed>.art{display:none}
-.roadview-item.is-media-collapsed>.cmt-side{grid-column:1/-1;border-left:0}
+.roadview-item>.art{grid-column:1}
+.roadview-item>.cmt-side{grid-column:2}
+.roadview-item.is-media-collapsed>.art{display:flex;min-height:54px;height:54px;overflow:hidden;background:color-mix(in srgb,var(--panel-solid) 92%,var(--bg-g1) 8%)!important;border-right:1px solid var(--line)}
+.roadview-item.is-media-collapsed>.art>*{display:none!important}
+.roadview-item.is-media-collapsed>.art::after{content:"MEDIA COLLAPSED";margin:auto;color:var(--faint);font-size:calc(9px*var(--fs,1));letter-spacing:.14em}
+.roadview-item.is-media-collapsed>.cmt-side{grid-column:2;border-left:1px solid var(--line)}
 /* 특수문자 프리셋 팝업 (v1.9) — SymbolInput */
 .sym-pop{position:fixed;z-index:120;padding:8px;background:var(--panel-solid,#fff);border:1px solid var(--line);border-radius:11px;box-shadow:var(--sh-dd)} /* body 포털 — 패널 overflow에 잘리지 않음 (v1.9) */
 .sym-pop .sym-tabs{display:flex;gap:2px;margin-bottom:6px}
@@ -1859,6 +1863,9 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
   .ticket .stub .sc-title{font-size:calc(18px*var(--fs,1))}
   .trpg-layout{grid-template-columns:1fr 150px}
   .roadview-item{grid-template-columns:1fr}
+  .roadview-item>.art,.roadview-item>.cmt-side{grid-column:1}
+  .roadview-item.is-media-collapsed>.art{height:46px;min-height:46px;border-right:0;border-bottom:1px solid var(--line)}
+  .roadview-item.is-media-collapsed>.cmt-side{grid-column:1;border-left:0;border-top:1px solid var(--line)}
   .cmt-side{border-left:none;border-top:1px solid var(--line)}
   /* 예외 — 캐릭터 세부: 960px에서 바로 모바일형 전환.
      AU/INFO 두 줄 내비게이션 → 아트 → 정보 순서로 배치한다. */

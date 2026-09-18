@@ -60,7 +60,7 @@ function CharEditInner() {
       : {
         ...ch, name: '', sub: '', basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
         specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
-        arts: [], artId: undefined, artUrl: undefined,
+        outfits: [], arts: [], artId: undefined, artUrl: undefined,
         thumbId: undefined, thumbCrop: undefined, artCrop: undefined,
       })
     : ch;
@@ -93,7 +93,7 @@ function CharEditInner() {
                   name: c.name, sub: c.sub, color: c.color, themeMode: c.themeMode,
                   colors: c.colors, colorBd: c.colorBd, colorTipMode: c.colorTipMode,
                   specs: c.specs, tabs: c.tabs, basicHtml: c.basicHtml,
-                  arts: c.arts, thumbId: c.thumbId, thumbCrop: c.thumbCrop,
+                  outfits: c.outfits, arts: c.arts, thumbId: c.thumbId, thumbCrop: c.thumbCrop,
                   fontId: c.fontId, nameSize: c.nameSize, bodyFontId: c.bodyFontId,
                 },
               },

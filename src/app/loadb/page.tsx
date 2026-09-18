@@ -23,7 +23,7 @@ import { youtubeVideoId } from '@/lib/youtube';
 const PAGE_SIZE = 4;
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
 
-function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
+function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, viewerName, isAdmin, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;
   comments: Comment[];                                  // 이 그림의 댓글 — 분리 저장분 + 옛 항목 안의 것 (v2.0)
   onComment: (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }, guest?: { name: string }) => void;
@@ -32,6 +32,7 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   canComment: boolean;
   guestMode: boolean;                                   // 비로그인 방문자 작성 (닉네임+비밀번호 — 방명록 4.7과 동일)
   viewerId?: string;
+  viewerName?: string;
   isAdmin: boolean;
   editLevel: (c: Comment) => 'free' | 'pw' | null;      // 수정 — 본인만 (게스트는 비밀번호)
   delLevel: (c: Comment) => 'free' | 'pw' | null;       // 삭제 — 본인·관리자 (게스트는 비밀번호)
@@ -226,23 +227,40 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
           ))}
           {comments.length === 0 && <p className="hint">첫 댓글을 남겨보세요</p>}
         </div>
-        {/* 게스트 작성(방문자 허용) — 구분선 아래 GUEST 바 + 입력줄 세로 배치 */}
-        <div className={`cmt-input ${guestMode && canComment ? 'guest' : ''}`}>
-          {guestMode && canComment && (
-            <GuestIdBar name={gName} onName={setGName} />
-          )}
-          {canComment && (
-            <div className="cmt-options">
-              <KCheck label="비밀 댓글" checked={secret} onChange={setSecret} />
-              <KCheck label="댓글 접기" checked={foldComment} onChange={setFoldComment} />
-            </div>
-          )}
-          <div className="ci-row" style={guestMode && canComment ? undefined : { display: 'contents' }}>
-            <KInput placeholder={canComment ? '댓글 남기기...' : '댓글은 로그인 후'} value={text}
-              disabled={!canComment}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter') post(); }} />
-            <button className="btn btn-dark" disabled={!canComment} onClick={post}>POST</button>
+        {/* 메모형 댓글 작성기 — 참고 이미지처럼 상단 작성자/등록, 큰 본문, 하단 옵션으로 압축 */}
+        <div className={`cmt-input rv-comment-composer ${guestMode && canComment ? 'guest' : ''}`}>
+          <div className="rv-comment-top">
+            {guestMode && canComment ? (
+              <input className="rv-comment-name" value={gName} maxLength={20} placeholder="닉네임"
+                onChange={e => setGName(e.target.value)} />
+            ) : (
+              <div className="rv-comment-author" aria-label="댓글 작성자">
+                {canComment ? (viewerName || 'MEMO') : '댓글은 로그인 후'}
+              </div>
+            )}
+            <button className="rv-comment-submit" type="button" disabled={!canComment || !text.trim()}
+              onClick={post} aria-label="댓글 등록" data-tip="댓글 등록">↥</button>
+          </div>
+
+          <textarea className="rv-comment-textarea"
+            placeholder={canComment ? 'memo' : '댓글은 로그인 후'}
+            value={text} disabled={!canComment} rows={4}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => {
+              if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+                e.preventDefault();
+                post();
+              }
+            }} />
+
+          <div className="rv-comment-bottom">
+            {canComment && (
+              <div className="cmt-options rv-comment-options">
+                <KCheck label="비밀 댓글" checked={secret} onChange={setSecret} />
+                <KCheck label="댓글 접기" checked={foldComment} onChange={setFoldComment} />
+              </div>
+            )}
+            <span className="rv-comment-shortcut">{canComment ? 'Ctrl / ⌘ + Enter' : ''}</span>
           </div>
         </div>
       </div>}
@@ -413,7 +431,7 @@ function RoadviewPageInner() {
           onEditComment={editComment} onDeleteComment={deleteComment}
           canComment={allow(menuSet.roadComment) && (!!user || menuSet.roadComment === 'guest')}
           guestMode={!user && menuSet.roadComment === 'guest'}
-          viewerId={user?.id} isAdmin={isAdmin}
+          viewerId={user?.id} viewerName={user?.nickname} isAdmin={isAdmin}
           editLevel={editLevel} delLevel={delLevel}
           /* authorId 없는 항목 + 비로그인이면 둘 다 undefined라 통과하던 것 (v2.0 발견) —
              손님이 올린 것은 이제 관리자만 손댈 수 있다(손님 확인 수단이 없다) */

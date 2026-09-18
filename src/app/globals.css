@@ -2085,3 +2085,31 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .char-outfit-edit-row>.btn{grid-column:3/5;justify-self:start}
   .char-outfit-edit-row>.fx{grid-column:4;grid-row:1}
 }
+
+
+/* ---------- 로드비 메모형 댓글 작성기 (v2.1) ---------- */
+.rv-comment-composer{display:block!important;padding:8px!important;border-top:1px solid var(--line);background:color-mix(in srgb,var(--panel-solid) 82%,var(--bg-g1) 18%)}
+.rv-comment-top{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:5px;align-items:stretch}
+.rv-comment-author,.rv-comment-name{width:100%;min-width:0;height:31px;padding:5px 10px;border:1px solid var(--line-dark);border-radius:6px;background:color-mix(in srgb,var(--panel-solid) 90%,transparent);color:var(--ink);font:inherit;font-size:calc(11.5px*var(--fs,1));line-height:1.2;box-sizing:border-box}
+.rv-comment-author{display:flex;align-items:center;color:var(--sub)}
+.rv-comment-name::placeholder{color:var(--faint)}
+.rv-comment-name:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 13%,transparent)}
+.rv-comment-submit{display:grid;place-items:center;width:34px;height:31px;border-radius:6px;background:var(--btn-dark,var(--ink));color:var(--btn-dark-fg,#fff);font-size:17px;font-weight:700;line-height:1;transition:.15s}
+.rv-comment-submit:hover:not(:disabled){filter:brightness(1.08);transform:translateY(-1px)}
+.rv-comment-submit:disabled{opacity:.34;cursor:default}
+.rv-comment-textarea{display:block;width:100%;min-height:82px;max-height:220px;margin-top:5px;padding:8px 10px;resize:vertical;border:1px solid var(--line-dark);border-radius:6px;background:color-mix(in srgb,var(--panel-solid) 92%,transparent);color:var(--ink);font:inherit;font-size:calc(12px*var(--fs,1));line-height:1.55;box-sizing:border-box}
+.rv-comment-textarea::placeholder{color:var(--faint)}
+.rv-comment-textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 12%,transparent)}
+.rv-comment-textarea:disabled{opacity:.62;cursor:not-allowed}
+.rv-comment-bottom{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:5px;padding:6px 8px;border:1px solid var(--line-dark);border-radius:6px;background:color-mix(in srgb,var(--panel-solid) 74%,transparent)}
+.rv-comment-options{padding:0!important;gap:12px!important;align-items:center}
+.rv-comment-options .k-check{font-size:calc(10.5px*var(--fs,1))}
+.rv-comment-shortcut{margin-left:auto;color:var(--faint);font-size:calc(8.5px*var(--fs,1));letter-spacing:.02em;white-space:nowrap}
+.roadview-item .cmt>p{white-space:pre-wrap;overflow-wrap:anywhere}
+
+@media(max-width:620px){
+  .rv-comment-composer{padding:7px!important}
+  .rv-comment-textarea{min-height:74px;font-size:calc(11.5px*var(--fs,1))}
+  .rv-comment-bottom{align-items:flex-start;flex-direction:column;gap:5px}
+  .rv-comment-shortcut{margin-left:0}
+}

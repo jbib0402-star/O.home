@@ -294,7 +294,10 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
 function RoadviewPageInner() {
   const { user, isAdmin } = useAuth();
   const members = useMembers();
-  const adminIds = new Set(members.filter(m => m.role === 'admin').map(m => m.id));
+  const adminIds = new Set([
+    ...members.filter(m => m.role === 'admin').map(m => m.id),
+    ...(isAdmin && user ? [user.id] : []),
+  ]);
   const toast = useToast();
   // 업로드·댓글 권한 3단계 (4.10 v1.7 — 환경설정 > 메뉴 관리의 로드뷰 항목).
   // 방문자(비로그인) 실사용은 Supabase 익명 처리 시 — mock 단계에선 로그인 전제

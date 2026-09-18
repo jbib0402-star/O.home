@@ -1499,7 +1499,7 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 @media (max-width:620px){.pl-table .hide-m,.pl-table col.c-wr,.pl-table col.c-with,.pl-table col.c-url,.pl-table col.c-mng{display:none}}
 
 /* ---------- 그림게시판 로드뷰 (4.10) ---------- */
-.roadview-item{display:grid;grid-template-columns:1fr 390px;margin-bottom:22px;overflow:hidden;padding:0} /* 우측 댓글 폭 확대 (320→390) */
+.roadview-item{display:grid;grid-template-columns:minmax(0,1fr) 450px;margin-bottom:22px;overflow:hidden;padding:0} /* 우측 댓글 영역을 채팅형에 맞게 조금 더 넓힘 */
 /* 그림별 상단 번호 영역 (v1.9) — 숫자만 표시 */
 .roadview-item .rv-head{grid-column:1/-1;padding:11px 18px;border-bottom:1px solid var(--line)}
 .roadview-item .rv-head b{font-size:calc(13.5px*var(--fs,1));letter-spacing:.08em}
@@ -1524,7 +1524,33 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 .roadview-item .art .meta b{display:block;font-size:calc(15px*var(--fs,1));letter-spacing:.06em}
 /* 댓글 입력창은 항상 사이드 맨 아래 — 그림이 세로로 길어도 리스트가 내부 스크롤로 흡수 */
 .cmt-side{display:flex;flex-direction:column;border-left:1px solid var(--line);min-height:0;height:100%}
-.cmt-side .list{flex:1;min-height:120px;padding:16px;overflow:auto;scrollbar-color:var(--sb-thumb,#c9ccd2) transparent;scrollbar-width:thin}
+.cmt-side .list{flex:1;min-height:120px;padding:18px 18px 14px;overflow:auto;scrollbar-color:var(--sb-thumb,#c9ccd2) transparent;scrollbar-width:thin}
+
+/* 로드비 댓글 — 메신저형 말풍선 */
+.roadview-item .loadb-chat{display:flex;flex-direction:column;align-items:flex-start;margin:0 0 16px;max-width:86%;font-size:calc(13px*var(--fs,1))}
+.roadview-item .loadb-chat.mine{margin-left:auto;align-items:flex-end}
+.roadview-item .loadb-chat.reply-depth{max-width:78%;margin-left:24px;padding-left:0;border-left:0}
+.roadview-item .loadb-chat.reply-depth.mine{margin-left:auto;margin-right:18px}
+.loadb-chat-meta{display:flex;align-items:center;gap:6px;margin:0 7px 4px;min-height:16px;color:var(--faint)}
+.loadb-chat-meta b{margin:0;font-size:calc(10.5px*var(--fs,1));font-weight:600;color:var(--sub)}
+.loadb-chat-meta .cmt-secret-mark{margin:0;font-size:calc(8.5px*var(--fs,1))}
+.loadb-chat-bubble{position:relative;min-width:52px;max-width:100%;padding:10px 12px;border:1px solid color-mix(in srgb,var(--line) 88%,transparent);border-radius:6px 16px 16px 16px;background:color-mix(in srgb,var(--panel-solid) 94%,var(--bg-g1) 6%);box-shadow:0 2px 10px color-mix(in srgb,var(--ink) 5%,transparent);color:var(--ink)}
+.loadb-chat-bubble::before{content:"";position:absolute;left:-6px;top:10px;width:11px;height:11px;background:inherit;border-left:1px solid color-mix(in srgb,var(--line) 88%,transparent);border-bottom:1px solid color-mix(in srgb,var(--line) 88%,transparent);transform:rotate(45deg)}
+.loadb-chat.mine .loadb-chat-bubble{border-radius:16px 6px 16px 16px;background:color-mix(in srgb,var(--accent-soft) 44%,var(--panel-solid) 56%);border-color:color-mix(in srgb,var(--accent) 18%,var(--line))}
+.loadb-chat.mine .loadb-chat-bubble::before{left:auto;right:-6px;border-left:0;border-bottom:0;border-right:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));border-top:1px solid color-mix(in srgb,var(--accent) 18%,var(--line))}
+.loadb-chat-bubble p{position:relative;z-index:1;margin:0!important;line-height:1.65!important;color:var(--ink)!important;white-space:pre-wrap;word-break:break-word}
+.loadb-chat-bubble .cmt-hidden{color:var(--faint)!important;font-style:italic}
+.loadb-chat-bubble .cmt-fold-button{position:relative;z-index:1;margin:0;border:0;padding:0;background:transparent}
+.loadb-chat-foot{display:flex;align-items:center;gap:7px;margin:4px 7px 0;min-height:15px}
+.loadb-chat.mine .loadb-chat-foot{flex-direction:row-reverse}
+.loadb-chat-date{margin:0!important;color:var(--faint);font-size:calc(8.5px*var(--fs,1))!important;white-space:nowrap}
+.loadb-chat-tools{display:flex;align-items:center;gap:5px;opacity:.35;transition:.14s}
+.loadb-chat:hover .loadb-chat-tools{opacity:1}
+.loadb-chat-tools button,.loadb-chat-tools .cmt-reply-action{margin:0;padding:0;border:0;background:transparent;color:var(--faint);font-size:calc(8.5px*var(--fs,1));line-height:1.2}
+.loadb-chat-tools button:hover,.loadb-chat-tools .cmt-reply-action:hover{color:var(--accent)}
+.loadb-chat-edit{position:relative;z-index:1;display:flex;gap:5px;min-width:min(300px,60vw)}
+.loadb-chat-edit .btn{padding:4px 8px;font-size:9px}
+
 .roadview-item{grid-auto-rows:minmax(0,auto)}
 .roadview-item .cmt-side{max-height:none}
 .cmt-options{display:flex;gap:14px;flex-wrap:wrap;padding:0 0 7px}
@@ -2122,4 +2148,8 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .loadb-compose-foot{align-items:flex-start;flex-direction:column;gap:5px}
   .loadb-compose-foot>small{align-self:flex-end}
   .loadb-compose textarea{min-height:76px}
+  .roadview-item .loadb-chat{max-width:91%}
+  .roadview-item .loadb-chat.reply-depth{max-width:84%;margin-left:12px}
+  .roadview-item .loadb-chat.reply-depth.mine{margin-left:auto;margin-right:10px}
+  .loadb-chat-bubble{padding:9px 11px}
 }

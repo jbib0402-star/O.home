@@ -3,7 +3,7 @@
 // 모달이 아니라 페이지라 잘못 클릭해도 닫히지 않음. 탭 내용은 별도 편집 화면으로 전환해 작성.
 // 두상(목록용)과 전신/아트(상세용)를 서로 다른 파일 참조로 저장한다.
 import React, { useEffect, useRef, useState } from 'react';
-import { Character, CharTab, ColorChip, Visibility, CharGrant } from '@/lib/charStore';
+import { Character, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt } from '@/lib/charStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
@@ -23,6 +23,7 @@ import { Lightbox } from '@/components/ui/Lightbox';
 interface SpecRow { id: string; label: string; value: string }
 interface ColorRow extends ColorChip { id: string }
 interface ArtItem { id: string; ref?: string; url?: string; file?: File }
+interface OutfitItem extends ArtItem { label: string }
 
 function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   const loaded = useBlobUrl(item.ref);
@@ -69,6 +70,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
     const refs = initial?.arts?.length ? initial.arts : (initial?.artId ? [initial.artId] : []);
     return refs.map(r => ({ id: newId(), ref: r }));
   });
+  // 의상 전신은 기존 추가 아트와 별도 관리한다. ORIGINAL/AU 편집 폼이 각각 자기 배열을 저장한다.
+  const [outfits, setOutfits] = useState<OutfitItem[]>(() =>
+    (initial?.outfits ?? []).map(o => ({ id: o.id, label: o.label, ref: o.imgId })));
+  const outfitFileFor = useRef<string | null>(null);
   // 두상은 전신/아트와 별도 상태로 관리한다. 구 데이터의 fallback은 표시 화면에서만 적용하며
   // 여기서 자동으로 첫 아트를 thumbId로 변환하거나 저장하지 않는다.
   const [thumb, setThumb] = useState<ArtItem | null>(() => (
@@ -95,6 +100,13 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
     });
   };
 
+  const changeOutfitImage = (id: string, list: FileList | null) => {
+    const file = list?.[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    setOutfits(prev => prev.map(o => o.id === id ? { ...o, file, url } : o));
+  };
+
   const changeThumb = (list: FileList | null) => {
     const file = list?.[0];
     if (!file) return;
@@ -107,14 +119,23 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const save = async () => {
     if (!name.trim()) { toast('이름을 입력해 주세요'); return; }
     if (auLabelEditable && !profileAuLabel.trim()) { toast('AU 이름을 입력해 주세요'); return; }
+    if (outfits.some(o => !o.label.trim() || (!o.file && !o.ref))) {
+      toast('의상 이름과 전신 이미지를 모두 등록해 주세요');
+      return;
+    }
     // 페이지 주소 (v1.9) — 유효성·중복 검사
     if (isNew && slug) {
       if (!isValidSlug(slug)) { toast('주소는 영문 소문자·숫자·하이픈만 쓸 수 있습니다'); return; }
       if (existingIds?.includes(slug)) { toast('이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요'); return; }
     }
-    const [artIds, thumbId] = await Promise.all([
+    const [artIds, thumbId, outfitRows] = await Promise.all([
       Promise.all(arts.map(a => (a.file ? putBlob(a.file) : Promise.resolve(a.ref!)))),
       thumb ? (thumb.file ? putBlob(thumb.file) : Promise.resolve(thumb.ref)) : Promise.resolve(undefined),
+      Promise.all(outfits.map(async o => ({
+        id: o.id,
+        label: o.label.trim(),
+        imgId: o.file ? await putBlob(o.file) : o.ref!,
+      } as OutfitFullArt))),
     ]);
     onSave({
       id: initial?.id ?? (slug || newId()),
@@ -134,6 +155,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       nameSize,
       bodyFontId,
       thumbClass: initial?.thumbClass ?? '',
+      outfits: outfitRows,
       arts: artIds,
       thumbId,                  // 목록용 두상 — 전신/아트와 독립
       thumbCrop: thumbId ? thumbCrop : (!thumbTouched && !initial?.thumbId ? initial?.thumbCrop : undefined),
@@ -210,6 +232,47 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
             )}
           </div>
         </div>
+
+        {/* 의상별 전신 — 상세 페이지 하단의 의상 버튼과 1:1로 연결 */}
+        <label className="k-label" style={{ margin: '8px 0 0' }}>
+          의상별 전신 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 버튼 이름 · 전신 이미지 · ⠿ 순서 변경</span>
+        </label>
+        {outfits.length > 0 && (
+          <DragList items={outfits} keyOf={o => o.id} onReorder={setOutfits}
+            render={o => (
+              <div className="char-outfit-edit-row">
+                <span className="drag-h">⠿</span>
+                <div className="char-outfit-edit-preview">
+                  {(o.ref || o.url || o.file) ? <ArtThumb item={o} /> : <span>FULL</span>}
+                </div>
+                <KInput placeholder="의상 이름 (예: 기본, 사복, 제복)" value={o.label} style={{ ...rowInp, flex: 1 }}
+                  onChange={e => setOutfits(l => l.map(x => x.id === o.id ? { ...x, label: e.target.value } : x))} />
+                <button type="button" className="btn btn-ghost" style={{ ...addBtn, justifySelf: 'auto' }}
+                  onClick={() => { outfitFileFor.current = o.id; document.getElementById('chOutfitF')?.click(); }}>
+                  {o.ref || o.file ? '이미지 변경' : '이미지 등록'}
+                </button>
+                <span className="fx" onClick={() => del.ask(
+                  '의상 「' + (o.label || '이름 없음') + '」을 삭제하시겠습니까?',
+                  () => setOutfits(l => l.filter(x => x.id !== o.id)),
+                  '해당 의상 전신 연결만 삭제되며 기존 추가 아트는 유지됩니다.',
+                )}>✕</span>
+              </div>
+            )} />
+        )}
+        <input id="chOutfitF" type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={e => {
+            const id = outfitFileFor.current;
+            if (id) changeOutfitImage(id, e.target.files);
+            outfitFileFor.current = null;
+            e.target.value = '';
+          }} />
+        <button className="btn btn-ghost" style={addBtn}
+          onClick={() => setOutfits(l => [...l, { id: newId(), label: l.length === 0 ? '기본' : '의상 ' + (l.length + 1) }])}>
+          ＋ ADD OUTFIT
+        </button>
+        <p className="hint" style={{ margin: 0 }}>
+          ※ 의상 전신이 없으면 기존 대표 전신을 「기본」으로 표시합니다. AU에서는 ORIGINAL 의상을 자동 상속하지 않습니다.
+        </p>
 
         {/* 상세용 전신/아트 목록 */}
         <label className="k-label" style={{ margin: '6px 0 0' }}>

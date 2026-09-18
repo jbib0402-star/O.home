@@ -51,7 +51,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   // 사용자가 직접 수정하기 시작한 뒤에는 외부 값으로 입력 내용을 덮어쓰지 않는다.
   const profileAuLabelDirty = useRef(false);
   const [slug, setSlug] = useState('');   // 페이지 주소 /chars/{slug} (v1.9 — 신규 등록, 비우면 자동)
+  const [altName, setAltName] = useState(initial?.altName ?? '');
   const [sub, setSub] = useState(initial?.sub ?? '');
+  const [quote, setQuote] = useState(initial?.quote ?? '');
   const [color, setColor] = useState(initial?.color ?? '#5d636d');
   const [themeMode, setThemeMode] = useState<'default' | 'custom'>(initial?.themeMode ?? 'default');
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
@@ -141,7 +143,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       id: initial?.id ?? (slug || newId()),
       // 입력한 그대로 저장 — 예전에는 대문자로 바꿔 저장해서 소문자 이름을 쓸 수 없었다
       name: name.trim(),
+      altName: altName.trim() || undefined,
       sub: sub.trim(),
+      quote: quote.trim() || undefined,
       color,
       themeMode,
       colors: colors.filter(x => x.hex).map(({ hex, label }) => ({ hex, label })),
@@ -423,7 +427,9 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
                 )}
               </div>
             )}
+            <KInput placeholder="영문/한자 이름 (선택)" value={altName} onChange={e => setAltName(e.target.value)} />
             <KInput placeholder="한 줄 소개 (선택)" value={sub} onChange={e => setSub(e.target.value)} />
+            <KInput placeholder="한마디 (선택)" value={quote} onChange={e => setQuote(e.target.value)} />
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className="cp-lb">대표 테마색</span>
               <ColorField value={color} onChange={setColor} />

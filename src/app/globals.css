@@ -2014,12 +2014,15 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-art-frame .profile-art-contain img{object-position:center bottom}
 .profile-editorial-art-frame>div:not(.profile-art-contain){width:100%;height:100%}
 
-.profile-outfit-switch{position:absolute;z-index:8;top:58px;right:28px;display:flex;align-items:center;justify-content:flex-end;gap:12px;max-width:calc(100% - 56px);min-width:0}
-.profile-outfit-label{flex:0 0 auto;font-family:var(--serif);font-size:8px;font-weight:700;letter-spacing:.2em;color:var(--faint)}
-.profile-outfit-switch>div{display:flex;gap:6px;min-width:0;overflow-x:auto;padding:2px 2px 4px;scrollbar-width:thin}
-.profile-outfit-switch button{flex:0 0 auto;padding:6px 13px;border:1px solid color-mix(in srgb,var(--line) 92%,transparent);border-radius:999px;background:color-mix(in srgb,var(--panel-solid) 70%,transparent);color:var(--sub);font-size:9px;letter-spacing:.04em;backdrop-filter:blur(9px);transition:.16s}
-.profile-outfit-switch button:hover{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 45%,var(--line))}
-.profile-outfit-switch button.on{background:var(--btn-dark,var(--ink));border-color:var(--btn-dark,var(--ink));color:var(--btn-dark-fg,#fff)}
+.profile-outfit-switch{position:absolute;z-index:8;top:58px;right:28px;display:flex;align-items:flex-start;justify-content:flex-end;max-width:calc(100% - 56px);min-width:0}
+.profile-outfit-label{display:none}
+.profile-outfit-switch>div{display:flex;flex-direction:column;align-items:flex-end;gap:3px;min-width:0;padding:0}
+.profile-outfit-switch button{display:flex;align-items:center;justify-content:flex-end;gap:6px;max-width:min(240px,34vw);padding:2px 0;border:0;background:transparent;color:var(--sub);font-family:var(--sans);font-size:calc(13px*var(--fs,1));font-weight:600;line-height:1.45;letter-spacing:0;text-align:right;white-space:normal;transition:.16s}
+.profile-outfit-switch button::after{content:"◇";flex:0 0 auto;color:var(--faint);font-size:.9em;line-height:1}
+.profile-outfit-switch button:hover{color:var(--ink)}
+.profile-outfit-switch button:hover::after{color:var(--accent)}
+.profile-outfit-switch button.on{background:transparent;color:var(--ink);font-weight:800}
+.profile-outfit-switch button.on::after{content:"◆";color:var(--accent)}
 
 .profile-editorial-info{grid-column:3;grid-row:1;min-width:0;min-height:100vh;padding:clamp(76px,8vh,118px) clamp(34px,4.2vw,76px) 100px;background:color-mix(in srgb,var(--panel-solid) 68%,transparent);backdrop-filter:blur(14px);font-family:var(--sans)}
 .profile-editorial-info .profile-info-head{margin-bottom:18px;padding-bottom:0}
@@ -2068,8 +2071,9 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-stage-kicker{right:16px;top:16px}
   .profile-editorial-watermark{font-size:clamp(56px,19vw,92px)}
   .profile-editorial-art-frame{inset:52px 2% 88px}
-  .profile-outfit-switch{top:48px;left:14px;right:14px;bottom:auto;justify-content:flex-end;gap:8px;max-width:none}
-  .profile-outfit-switch button{padding:5px 10px;font-size:8.5px}
+  .profile-outfit-switch{top:48px;left:auto;right:14px;bottom:auto;justify-content:flex-end;max-width:58%}
+  .profile-outfit-switch>div{gap:2px}
+  .profile-outfit-switch button{max-width:100%;padding:1px 0;font-size:calc(12px*var(--fs,1))}
   .profile-editorial-info{padding:34px 20px 76px}
   .profile-editorial-info .profile-info-head{align-items:flex-start;flex-direction:column;gap:10px}
   .profile-editorial-info .profile-info-actions{width:100%;justify-content:flex-start}

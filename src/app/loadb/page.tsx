@@ -40,7 +40,6 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const toast = useToast();
   const [open, setOpen] = useState(false);
   const [mediaCollapsed, setMediaCollapsed] = useState(!!item.mediaFolded);
   const [text, setText] = useState('');

@@ -58,7 +58,8 @@ function CharEditInner() {
     ? (auProf
       ? charWithAu(ch, auKey)
       : {
-        ...ch, name: '', altName: '', sub: '', quote: '', basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
+        ...ch, name: '', altName: '', sub: '', quote: '', workStatus: undefined, workStatusCustom: undefined,
+        basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
         specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
         outfits: [], arts: [], artId: undefined, artUrl: undefined,
         thumbId: undefined, thumbCrop: undefined, artCrop: undefined,
@@ -91,6 +92,7 @@ function CharEditInner() {
                     label: savedAuLabel ?? auLabel ?? 'AU', source: 'character' as const,
                   } : {}),
                   name: c.name, altName: c.altName, sub: c.sub, quote: c.quote,
+                  workStatus: c.workStatus ?? null, workStatusCustom: c.workStatusCustom,
                   color: c.color, themeMode: c.themeMode,
                   colors: c.colors, colorBd: c.colorBd, colorTipMode: c.colorTipMode,
                   specs: c.specs, tabs: c.tabs, basicHtml: c.basicHtml,

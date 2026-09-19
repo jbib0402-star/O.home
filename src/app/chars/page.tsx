@@ -5,7 +5,7 @@ import React, { Suspense, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth';
 import { useLocalList } from '@/lib/postStore';
-import { Character, CHAR_SEED, charThumbRef } from '@/lib/charStore';
+import { Character, CHAR_SEED, charThumbRef, characterWorkStatusMeta } from '@/lib/charStore';
 import { useSectionParam, filterSection, sectionSetter, secQuery } from '@/lib/sectionStore';
 import { SearchBar, FitText } from '@/components/ui/Kit';
 import { CroppedBlobImg } from '@/components/ui/CropEditor';
@@ -55,6 +55,7 @@ function CharsInner() {
       <div className="chars-grid">
         {visible.map((c, i) => {
           const priv = c.visibility === 'private';
+          const statusMeta = characterWorkStatusMeta(c.workStatus, c.workStatusCustom);
           const sp = sort(i) as { style?: React.CSSProperties };
           return (
             <div key={c.id} className="char-card char-archive-card" {...sort(i)}
@@ -63,6 +64,11 @@ function CharsInner() {
               <div className="thumb">
                 <CroppedBlobImg fileRef={charThumbRef(c)} crop={c.thumbCrop} ph={c.thumbClass}
                   label={priv ? '비공개' : '3:4'} />
+                {statusMeta && (
+                  <span className={`char-work-badge char-card-work-badge status-${c.workStatus}`}>
+                    <i aria-hidden="true">{statusMeta.icon}</i>{statusMeta.label}
+                  </span>
+                )}
                 <div className="char-archive-shade" aria-hidden="true" />
                 <div className="char-archive-name">
                   <b><FitText>{c.name}</FitText></b>

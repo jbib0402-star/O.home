@@ -26,12 +26,34 @@ export interface CharTab {
   visibility?: 'public' | 'private';
 }
 
+export type CharacterWorkStatus = 'construction' | 'editing' | 'image-pending' | 'update-soon' | 'hold' | 'custom';
+
+export const CHARACTER_WORK_STATUS_OPTIONS: { value: CharacterWorkStatus; label: string; icon: string }[] = [
+  { value: 'construction', label: '공사중', icon: '⚒' },
+  { value: 'editing', label: '설정 수정중', icon: '✎' },
+  { value: 'image-pending', label: '이미지 준비중', icon: '▧' },
+  { value: 'update-soon', label: '업데이트 예정', icon: '◷' },
+  { value: 'hold', label: '보류', icon: 'Ⅱ' },
+  { value: 'custom', label: '직접 입력', icon: '✦' },
+];
+
+export function characterWorkStatusMeta(status?: CharacterWorkStatus, custom?: string) {
+  if (!status) return null;
+  const base = CHARACTER_WORK_STATUS_OPTIONS.find(x => x.value === status);
+  if (!base) return null;
+  const label = status === 'custom' ? custom?.trim() : base.label;
+  if (!label) return null;
+  return { ...base, label };
+}
+
 export interface Character {
   id: string;
   name: string;          // 대표 이름 (전용 폰트 적용 대상)
   altName?: string;      // 영문명/한자명 등 목록·상세에 함께 표시할 보조 이름
   sub: string;           // 한 줄 소개
   quote?: string;        // 캐릭터 대표 한마디/대사
+  workStatus?: CharacterWorkStatus; // 프로필 작업중 상태 뱃지
+  workStatusCustom?: string;        // 직접 입력 상태 문구
   color: string;         // 대표 테마색 (말풍선·리스트 점)
   // 상세 페이지 테마 (v1.9 사용자 확정) — custom이면 대표 테마색으로 홈 팔레트 임시 전환 (4.18 방식)
   themeMode?: 'default' | 'custom';
@@ -89,6 +111,8 @@ export interface AuCharProfile {
   altName?: string;
   sub?: string;
   quote?: string;
+  workStatus?: CharacterWorkStatus | null; // null = AU에서 상태 뱃지 없음
+  workStatusCustom?: string;
   color?: string;
   themeMode?: 'default' | 'custom';
   colors?: ColorChip[];
@@ -124,6 +148,10 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     ...(p.altName !== undefined ? { altName: p.altName } : {}),
     ...(p.sub !== undefined ? { sub: p.sub } : {}),
     ...(p.quote !== undefined ? { quote: p.quote } : {}),
+    ...(p.workStatus !== undefined ? {
+      workStatus: p.workStatus ?? undefined,
+      workStatusCustom: p.workStatus ? p.workStatusCustom : undefined,
+    } : {}),
     ...(p.color !== undefined ? { color: p.color } : {}),
     ...(p.themeMode !== undefined ? { themeMode: p.themeMode } : {}),
     ...(p.colors !== undefined ? { colors: p.colors } : {}),

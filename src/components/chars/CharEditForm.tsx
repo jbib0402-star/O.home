@@ -3,7 +3,7 @@
 // 모달이 아니라 페이지라 잘못 클릭해도 닫히지 않음. 탭 내용은 별도 편집 화면으로 전환해 작성.
 // 두상(목록용)과 전신/아트(상세용)를 서로 다른 파일 참조로 저장한다.
 import React, { useEffect, useRef, useState } from 'react';
-import { Character, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt } from '@/lib/charStore';
+import { Character, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt, CharacterWorkStatus, CHARACTER_WORK_STATUS_OPTIONS, characterWorkStatusMeta } from '@/lib/charStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
@@ -54,6 +54,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [altName, setAltName] = useState(initial?.altName ?? '');
   const [sub, setSub] = useState(initial?.sub ?? '');
   const [quote, setQuote] = useState(initial?.quote ?? '');
+  const [workStatus, setWorkStatus] = useState<CharacterWorkStatus | ''>(initial?.workStatus ?? '');
+  const [workStatusCustom, setWorkStatusCustom] = useState(initial?.workStatusCustom ?? '');
   const [color, setColor] = useState(initial?.color ?? '#5d636d');
   const [themeMode, setThemeMode] = useState<'default' | 'custom'>(initial?.themeMode ?? 'default');
   const [visibility, setVisibility] = useState<Visibility>(initial?.visibility ?? 'public');
@@ -146,6 +148,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       altName: altName.trim() || undefined,
       sub: sub.trim(),
       quote: quote.trim() || undefined,
+      workStatus: workStatus || undefined,
+      workStatusCustom: workStatus === 'custom' ? (workStatusCustom.trim() || undefined) : undefined,
       color,
       themeMode,
       colors: colors.filter(x => x.hex).map(({ hex, label }) => ({ hex, label })),
@@ -430,6 +434,35 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
             <KInput placeholder="영문/한자 이름 (선택)" value={altName} onChange={e => setAltName(e.target.value)} />
             <KInput placeholder="한 줄 소개 (선택)" value={sub} onChange={e => setSub(e.target.value)} />
             <KInput placeholder="한마디 (선택)" value={quote} onChange={e => setQuote(e.target.value)} />
+
+            <div className="char-status-setting">
+              <div className="char-status-setting-head">
+                <span className="k-label" style={{ margin: 0 }}>프로필 상태</span>
+                {characterWorkStatusMeta(workStatus || undefined, workStatusCustom) && (() => {
+                  const meta = characterWorkStatusMeta(workStatus || undefined, workStatusCustom)!;
+                  return (
+                    <span className={`char-work-badge status-${workStatus}`}>
+                      <i aria-hidden="true">{meta.icon}</i>{meta.label}
+                    </span>
+                  );
+                })()}
+              </div>
+              <KSelect value={workStatus} onChange={v => {
+                const next = v as CharacterWorkStatus | '';
+                setWorkStatus(next);
+                if (next !== 'custom') setWorkStatusCustom('');
+              }}
+                options={[
+                  { value: '', label: '상태 없음' },
+                  ...CHARACTER_WORK_STATUS_OPTIONS.map(x => ({ value: x.value, label: `${x.icon}  ${x.label}` })),
+                ]} />
+              {workStatus === 'custom' && (
+                <KInput maxLength={24} placeholder="직접 입력 상태 (예: 관계 정리중)"
+                  value={workStatusCustom} onChange={e => setWorkStatusCustom(e.target.value)} />
+              )}
+              <p className="hint" style={{ margin: 0 }}>목록 카드와 상세 프로필에 작은 상태 뱃지로 표시됩니다. 공개범위와는 별개입니다.</p>
+            </div>
+
             <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
               <span className="cp-lb">대표 테마색</span>
               <ColorField value={color} onChange={setColor} />

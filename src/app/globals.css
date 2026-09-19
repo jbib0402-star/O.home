@@ -2275,3 +2275,48 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .char-archive-name b{font-size:calc(13px*var(--fs,1))}
   .char-archive-name small{font-size:calc(7px*var(--fs,1))}
 }
+
+
+/* ---------- 캐릭터 작업 상태 뱃지 ----------
+   목록/상세/편집에서 같은 작은 편집부 라벨 톤을 사용한다. */
+.char-work-badge{
+  display:inline-flex;align-items:center;gap:5px;max-width:100%;
+  padding:5px 9px;border:1px solid rgba(255,255,255,.3);border-radius:999px;
+  color:#f6f7fb;background:rgba(50,54,63,.82);
+  box-shadow:0 4px 14px rgba(0,0,0,.18);
+  backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
+  font-size:calc(10px*var(--fs,1));font-weight:700;line-height:1;
+  letter-spacing:.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis
+}
+.char-work-badge i{
+  display:inline-grid;place-items:center;flex-shrink:0;
+  min-width:12px;font-style:normal;font-family:var(--sans);font-size:.98em;line-height:1
+}
+.char-work-badge.status-construction{background:rgba(56,59,68,.84);border-color:rgba(218,222,231,.38)}
+.char-work-badge.status-editing{background:rgba(38,61,126,.86);border-color:rgba(109,142,233,.65)}
+.char-work-badge.status-image-pending{background:rgba(89,96,111,.88);border-color:rgba(219,224,234,.58)}
+.char-work-badge.status-update-soon{background:rgba(112,72,10,.88);border-color:rgba(218,158,45,.72);color:#fff5d8}
+.char-work-badge.status-hold{background:rgba(76,43,99,.88);border-color:rgba(168,112,201,.62)}
+.char-work-badge.status-custom{background:rgba(104,39,62,.88);border-color:rgba(215,91,133,.66)}
+.char-card-work-badge{
+  position:absolute;z-index:5;left:8px;top:8px;
+  max-width:calc(100% - 16px)
+}
+.profile-work-badge{
+  position:static;margin:0 0 13px 0;
+  max-width:min(100%,300px)
+}
+.char-status-setting{
+  display:grid;gap:8px;padding:11px;
+  border:1px solid var(--line);border-radius:var(--radius-s);
+  background:color-mix(in srgb,var(--panel-solid) 72%,transparent)
+}
+.char-status-setting-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0
+}
+.char-status-setting-head .char-work-badge{flex-shrink:1;min-width:0}
+
+@media(max-width:620px){
+  .char-card-work-badge{left:6px;top:6px;max-width:calc(100% - 12px);padding:4px 7px;font-size:calc(8.5px*var(--fs,1))}
+  .profile-work-badge{margin-bottom:10px}
+}

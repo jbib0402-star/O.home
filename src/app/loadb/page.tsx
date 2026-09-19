@@ -17,21 +17,19 @@ import { KCheck } from '@/components/ui/Kit';
 import { useToast } from '@/components/ui/Toast';
 import { pushNotif } from '@/lib/notifStore';
 import { useMenuSettings, MenuPerm } from '@/lib/menuStore';
-import { GuestIdBar } from '@/components/ui/GuestId';
 import { fileDrop } from '@/lib/dnd';
 import { youtubeVideoId } from '@/lib/youtube';
 
 const PAGE_SIZE = 4;
 const FOLD_LABEL = { spoiler: '스포일러', adult: '수위 주의' };
 
-function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, guestMode, viewerId, isAdmin, adminIds, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
+function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, canComment, viewerId, isAdmin, adminIds, editLevel, delLevel, canEditItem, canDeleteItem, onEdit, onDelete }: {
   item: RoadItem;
   comments: Comment[];                                  // 이 그림의 댓글 — 분리 저장분 + 옛 항목 안의 것 (v2.0)
-  onComment: (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }, guest?: { name: string }) => void;
+  onComment: (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }) => void;
   onEditComment: (id: string, cid: string, text: string) => void;
   onDeleteComment: (id: string, cid: string) => void;
-  canComment: boolean;
-  guestMode: boolean;                                   // 비로그인 방문자 작성 (닉네임+비밀번호 — 방명록 4.7과 동일)
+  canComment: boolean;                                  // 로드비 댓글은 로그인한 회원만 작성 가능
   viewerId?: string;
   isAdmin: boolean;
   adminIds: Set<string>;                                // 작성자의 역할 기준 — 보는 사람과 무관하게 관리자 댓글 좌측 고정
@@ -46,7 +44,6 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
   const [open, setOpen] = useState(false);
   const [mediaCollapsed, setMediaCollapsed] = useState(!!item.mediaFolded);
   const [text, setText] = useState('');
-  const [gName, setGName] = useState('');               // 게스트 닉네임
   const [secret, setSecret] = useState(false);
   const [foldComment, setFoldComment] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
@@ -78,9 +75,8 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     setEditCid(null);
   };
   const post = () => {
-    if (!text.trim()) return;
-    if (guestMode && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
-    onComment(item.id, text.trim(), { secret, folded: foldComment }, guestMode ? { name: gName.trim() } : undefined);
+    if (!canComment || !text.trim()) return;
+    onComment(item.id, text.trim(), { secret, folded: foldComment });
     setText('');
     setSecret(false);
     setFoldComment(false);
@@ -99,10 +95,8 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
     setReplyFolded(false);
   };
   const postReply = () => {
-    if (!replyTo || !replyText.trim()) return;
-    if (guestMode && !gName.trim()) { toast('닉네임을 입력해 주세요'); return; }
-    onComment(item.id, replyText.trim(), { secret: replySecret, folded: replyFolded, parentId: replyTo },
-      guestMode ? { name: gName.trim() } : undefined);
+    if (!canComment || !replyTo || !replyText.trim()) return;
+    onComment(item.id, replyText.trim(), { secret: replySecret, folded: replyFolded, parentId: replyTo });
     setReplyTo(null);
     setReplyLabel('');
     setReplyText('');
@@ -276,9 +270,8 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
           ))}
           {comments.length === 0 && <p className="hint">첫 댓글을 남겨보세요</p>}
         </div>
-        {/* 참고 이미지형 메모 입력 — 기능은 기존 비밀댓글/접기/게스트 권한을 그대로 사용 */}
-        <div className={`cmt-input ${guestMode && canComment ? 'guest' : ''}`}>
-          {guestMode && canComment && <GuestIdBar name={gName} onName={setGName} />}
+        {/* 참고 이미지형 메모 입력 — 비로그인은 열람만, 로그인한 회원만 댓글 작성 */}
+        <div className="cmt-input">
           <div className="loadb-compose">
             <div className="loadb-compose-head">
               <span>MEMO</span>
@@ -317,7 +310,7 @@ function RoadviewPageInner() {
   ]);
   const toast = useToast();
   // 업로드·댓글 권한 3단계 (4.10 v1.7 — 환경설정 > 메뉴 관리의 로드뷰 항목).
-  // 방문자(비로그인) 실사용은 Supabase 익명 처리 시 — mock 단계에선 로그인 전제
+  // 로드비 댓글은 설정값이 guest여도 실제 작성자는 로그인 회원으로 제한한다.
   const [menuSet] = useMenuSettings();
   const allow = (p: MenuPerm) => (p === 'admin' ? isAdmin : p === 'member' ? !!user : true);
   const [itemsAll, setItemsAll, roadLoaded] = useLocalList<RoadItem>('ohome.road.v1', ROAD_SEED);
@@ -416,12 +409,11 @@ function RoadviewPageInner() {
     toast(`${padNo(it.no)} 유튜브 영상이 추가되었습니다`);
   };
 
-  const addComment = (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }, guest?: { name: string }) => {
-    // 게스트 댓글 (방문자 권한, v1.9) — 닉네임+비밀번호, authorId는 빈 값
+  const addComment = (id: string, text: string, options: { secret: boolean; folded: boolean; parentId?: string }) => {
+    // 로드비 댓글은 로그인 회원 전용. UI뿐 아니라 저장 함수에서도 한 번 더 막는다.
+    if (!user) { toast('댓글은 로그인 후 작성할 수 있습니다'); return; }
     const base = { id: newId(), text, date: new Date().toISOString(), target: 'road' as const, targetId: id };
-    const c: CommentRow = guest
-      ? { ...base, author: guest.name, authorId: '', ...options }
-      : { ...base, author: user!.nickname, authorId: user!.id, ...options };
+    const c: CommentRow = { ...base, author: user.nickname, authorId: user.id, ...options };
     setCmtRows([...cmtRows, c]);
     // 알림 (4.13) — 그림 작성자에게 (본인 댓글 제외)
     const target = items.find(it => it.id === id);
@@ -436,7 +428,8 @@ function RoadviewPageInner() {
     }
   };
 
-  // 댓글 수정·삭제 (v1.9) — 관리자·본인은 바로, 게스트 댓글은 비밀번호 확인(RoadBlock)
+  // 댓글 수정·삭제 (v1.9) — 로그인 작성자 본인은 수정, 관리자는 삭제 가능.
+  // 기존 게스트 댓글은 열람 호환만 유지하며 새 게스트 댓글 작성은 허용하지 않는다.
   // 분리 저장분과 옛 항목 안의 댓글을 모두 다룬다 (v2.0)
   const editComment = (id: string, cid: string, text: string) => {
     if (cmtRows.some(c => c.id === cid)) setCmtRows(cmtRows.map(c => (c.id === cid ? { ...c, text } : c)));
@@ -478,8 +471,7 @@ function RoadviewPageInner() {
       {visible.slice(0, shown).map(it => (
         <RoadBlock key={it.id} item={it} comments={commentsFor(cmtRows, 'road', it.id, it.comments)} onComment={addComment}
           onEditComment={editComment} onDeleteComment={deleteComment}
-          canComment={allow(menuSet.roadComment) && (!!user || menuSet.roadComment === 'guest')}
-          guestMode={!user && menuSet.roadComment === 'guest'}
+          canComment={allow(menuSet.roadComment) && !!user}
           viewerId={user?.id} isAdmin={isAdmin} adminIds={adminIds}
           editLevel={editLevel} delLevel={delLevel}
           /* authorId 없는 항목 + 비로그인이면 둘 다 undefined라 통과하던 것 (v2.0 발견) —

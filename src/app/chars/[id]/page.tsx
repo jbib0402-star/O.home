@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { newId, useLocalList } from '@/lib/postStore';
 import {
   AuCharProfile, Character, CHAR_AU_PREFIX, CHAR_SEED, charGrant, charThumbRef, charWithAu,
-  chipBorder, isCharacterAuKey, Relation, REL_SEED,
+  chipBorder, isCharacterAuKey, Relation, REL_SEED, characterWorkStatusMeta,
 } from '@/lib/charStore';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { useFonts } from '@/lib/fontStore';
@@ -38,6 +38,8 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
     altName: '',
     sub: '',
     quote: '',
+    workStatus: null,
+    workStatusCustom: undefined,
     basicHtml: '',
     tabs: [],
     specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
@@ -127,6 +129,7 @@ function CharDetailInner() {
   const auRegistered = !auKey || !!ch?.auProfiles?.[auKey];
   // 표시용 캐릭터 — AU에서 지정한 필드만 base를 대체 (이름·키·성별부터 전부 바뀔 수 있음)
   const eff = ch ? charWithAu(ch, auKey) : undefined;
+  const workStatusMeta = eff ? characterWorkStatusMeta(eff.workStatus, eff.workStatusCustom) : null;
 
   /** 상세 화면 아트 위치 저장 (v2.0) — AU를 보는 중이면 그 AU에만, 아니면 원본에 */
   const saveArtCrop = (c: CropValue | undefined) => {
@@ -386,6 +389,12 @@ function CharDetailInner() {
                   {isAdmin && <button className="btn btn-ghost" onClick={() => setDelAsk(true)}>DELETE</button>}
                 </div>
               </div>
+
+              {workStatusMeta && (
+                <span className={`char-work-badge profile-work-badge status-${eff.workStatus}`}>
+                  <i aria-hidden="true">{workStatusMeta.icon}</i>{workStatusMeta.label}
+                </span>
+              )}
 
               <div className="profile-name" style={{
                 fontFamily: familyOf(eff.fontId) ?? 'var(--serif)',

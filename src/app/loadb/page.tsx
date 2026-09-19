@@ -237,7 +237,6 @@ function RoadBlock({ item, comments, onComment, onEditComment, onDeleteComment, 
               {renderComment(c)}
               {replyTo === c.id && (
                 <div className="cmt-reply-form">
-                  {guestMode && <GuestIdBar name={gName} onName={setGName} />}
                   <div className="loadb-compose loadb-compose-reply">
                     <div className="loadb-compose-head">
                       <span>REPLY · {replyLabel}</span>

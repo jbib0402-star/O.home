@@ -32,6 +32,7 @@ export interface CharacterManualRelation {
   name: string;
   relation: string;
   description?: string;
+  color?: string; // 관계 카드 메인 컬러
   faceId?: string;
   faceCrop?: import("@/components/ui/CropEditor").CropValue;
 }

@@ -31,6 +31,9 @@ type CharAuChoice = {
 
 const RELATION_CARD_TONES = ['mint', 'pink', 'sky', 'lilac'] as const;
 const RELATION_CARD_DECOS = ['✿', '♡', '✦', '⌁'] as const;
+const relationCardStyle = (color?: string) => color
+  ? ({ '--relation-tone': color } as React.CSSProperties)
+  : undefined;
 
 /** 캐릭터 자체 AU 생성 직후의 독립 프로필. 이미지는 비워 ORIGINAL을 자동 상속하지 않는다. */
 function blankCharacterAu(label: string, base: Character): AuCharProfile {
@@ -462,6 +465,7 @@ function CharDetailInner() {
                         return (
                           <button type="button" key={r.id}
                             className={`relation-card relation-card--${tone} relation-card--link`}
+                            style={relationCardStyle(faceCharacter?.color)}
                             onClick={() => router.push(href)}>
                             <span className="relation-thumb-frame">
                               <span className="relation-thumb-image">
@@ -493,7 +497,8 @@ function CharDetailInner() {
                           const colorIndex = relatedRels.length + index;
                           const tone = RELATION_CARD_TONES[colorIndex % RELATION_CARD_TONES.length];
                           return (
-                          <article className={`relation-card relation-card--${tone}`} key={r.id}>
+                          <article className={`relation-card relation-card--${tone}`} key={r.id}
+                            style={relationCardStyle(r.color)}>
                             <div className="relation-thumb-frame">
                               <div className="relation-thumb-image">
                                 <CroppedBlobImg fileRef={r.faceId} crop={r.faceCrop} label={r.name.slice(0, 1)} alt={`${r.name} 두상`} />

@@ -58,9 +58,14 @@ function CharEditInner() {
     ? (auProf
       ? charWithAu(ch, auKey)
       : {
-        ...ch, name: '', altName: '', sub: '', quote: '', workStatus: undefined, workStatusCustom: undefined,
+        ...ch, name: '', altName: '', sub: '', quote: '', keywords: [], workStatus: undefined, workStatusCustom: undefined,
         basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
-        specs: [{ label: '성별', value: '' }, { label: '키', value: '' }],
+        specs: [
+          { label: '나이', value: '' }, { label: '성별', value: '' },
+          { label: '키', value: '' }, { label: '직업', value: '' },
+          { label: '생일', value: '' }, { label: '좋아하는 것', value: '' },
+          { label: '싫어하는 것', value: '' }, { label: '성격', value: '' },
+        ],
         outfits: [], arts: [], artId: undefined, artUrl: undefined,
         thumbId: undefined, thumbCrop: undefined, artCrop: undefined,
       })
@@ -91,7 +96,7 @@ function CharEditInner() {
                   ...(isCharacterAuKey(auKey) ? {
                     label: savedAuLabel ?? auLabel ?? 'AU', source: 'character' as const,
                   } : {}),
-                  name: c.name, altName: c.altName, sub: c.sub, quote: c.quote,
+                  name: c.name, altName: c.altName, sub: c.sub, quote: c.quote, keywords: c.keywords,
                   workStatus: c.workStatus ?? null, workStatusCustom: c.workStatusCustom,
                   color: c.color, themeMode: c.themeMode,
                   colors: c.colors, colorBd: c.colorBd, colorTipMode: c.colorTipMode,

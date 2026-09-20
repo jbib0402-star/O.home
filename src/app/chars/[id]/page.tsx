@@ -38,6 +38,7 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
     altName: '',
     sub: '',
     quote: '',
+    keywords: [],
     workStatus: null,
     workStatusCustom: undefined,
     basicHtml: '',
@@ -108,6 +109,15 @@ function CharDetailInner() {
   // AU 편집에서 ?au= 로 돌아오면 그 AU가 선택된 채 시작
   const [auKey, setAuKey] = useState<string | null>(() => params.get('au'));
   const canEdit = !!ch && (isAdmin || charGrant(ch, user?.id) === 'edit');
+  const relatedRels = useMemo(() => {
+    if (!ch) return [];
+    return rels.filter(r => {
+      if (!r.members.some(m => m.charId === ch.id)) return false;
+      if (r.visibility === 'public' || isAdmin) return true;
+      if (r.visibility === 'member') return !!user;
+      return !!charGrant(ch, user?.id);
+    });
+  }, [rels, ch, isAdmin, user]);
   // 대표 아트 우클릭 → 상세 화면에 보일 위치 조정 (v2.0)
   const [artCtx, setArtCtx] = useState<{ x: number; y: number; ref: string } | null>(null);
   // 편집 중인 아트 참조 + 그때 실제 표시 영역의 가로/세로 비 (3:4가 아니라 화면 높이에 따라 달라진다)
@@ -331,6 +341,7 @@ function CharDetailInner() {
                 <div className="profile-kicker">
                   {tab === 'basic'
                     ? (auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'CHARACTER PROFILE')
+                    : tab === 'relations' ? 'RELATIONSHIPS'
                     : (curTab?.title?.trim() || 'PROFILE')}
                 </div>
                 <div className="profile-info-actions">
@@ -355,7 +366,14 @@ function CharDetailInner() {
               } as React.CSSProperties}>{eff.name}</div>
               {eff.altName && <div className="profile-alt-name">{eff.altName}</div>}
               {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
-              {eff.quote && <div className="profile-quote">“{eff.quote}”</div>}
+
+              {!!eff.keywords?.length && (
+                <div className="profile-keywords" aria-label="성격 키워드">
+                  {eff.keywords.map((keyword, index) => (
+                    <span key={keyword + index}>#{keyword.replace(/^#/, '')}</span>
+                  ))}
+                </div>
+              )}
 
               {eff.colors.length > 0 && (
                 <div className="profile-palette" aria-label="테마 컬러">
@@ -369,10 +387,15 @@ function CharDetailInner() {
                 </div>
               )}
 
-              {visibleTabs.length > 0 && (
-                <nav className="profile-info-tabs" aria-label="프로필 정보 탭">
+              <nav className="profile-info-tabs" aria-label="프로필 정보 탭">
                   <button type="button" className={tab === 'basic' ? 'on' : ''}
-                    aria-pressed={tab === 'basic'} onClick={() => pickTab('basic')}>기본 정보</button>
+                    aria-pressed={tab === 'basic'} onClick={() => pickTab('basic')}>
+                    <span aria-hidden="true">●</span>캐릭터
+                  </button>
+                  <button type="button" className={tab === 'relations' ? 'on' : ''}
+                    aria-pressed={tab === 'relations'} onClick={() => pickTab('relations')}>
+                    <span aria-hidden="true">↗</span>관계
+                  </button>
                   {visibleTabs.map(t => (
                     <button type="button" key={t.id}
                       className={(tab === t.id ? 'on ' : '') + (t.visibility === 'private' ? 'is-private' : '')}
@@ -381,16 +404,30 @@ function CharDetailInner() {
                       {t.visibility === 'private' && <i aria-label="비공개">🔒</i>}
                     </button>
                   ))}
-                </nav>
-              )}
+              </nav>
 
               {tab === 'basic' ? (
                 <>
-                  <dl className="spec profile-editorial-spec">
-                    {eff.specs.filter(s => s.value.trim()).map(s => (
-                      <div className="spec-item" key={s.label}><dt>{s.label}</dt><dd>{s.value}</dd></div>
-                    ))}
-                  </dl>
+                  <section className="profile-basic-card">
+                    <div className="profile-basic-card-head">
+                      <strong>BASIC INFO</strong><span>기본 정보</span>
+                    </div>
+                    <dl className="spec profile-editorial-spec">
+                      {eff.specs.filter(s => s.value.trim()).map(s => {
+                        const wide = /성격|싫어|특이|기타/.test(s.label);
+                        return (
+                          <div className={'spec-item ' + (wide ? 'is-wide' : '')} key={s.label}>
+                            <dt>{s.label}</dt><dd>{s.value}</dd>
+                          </div>
+                        );
+                      })}
+                      {eff.quote && (
+                        <div className="spec-item is-wide profile-quote-row">
+                          <dt>한마디</dt><dd>「{eff.quote}」</dd>
+                        </div>
+                      )}
+                    </dl>
+                  </section>
                   {basicHtml && (
                     <section className="profile-copy">
                       <div className="profile-section-label">OTHER NOTES <span>기타사항</span></div>
@@ -398,6 +435,28 @@ function CharDetailInner() {
                     </section>
                   )}
                 </>
+              ) : tab === 'relations' ? (
+                <section className="profile-relations-section">
+                  <div className="profile-section-label">RELATIONSHIPS <span>관계</span></div>
+                  {relatedRels.length > 0 ? (
+                    <div className="profile-relation-list">
+                      {relatedRels.map(r => {
+                        const [selectedRelId, selectedAuId] = auKey && !isCharacterAuKey(auKey)
+                          ? auKey.split(':') : ['', ''];
+                        const href = selectedRelId === r.id && selectedAuId
+                          ? `/rels/${r.id}?au=${encodeURIComponent(selectedAuId)}` : `/rels/${r.id}`;
+                        return (
+                          <button type="button" key={r.id} className="profile-relation-card"
+                            onClick={() => router.push(href)}>
+                            <span><small>{r.kind === 'multi' ? 'MULTI' : 'PAIR'}</small><b>{r.name}</b>
+                              {r.catchphrase && <em>{r.catchphrase}</em>}</span>
+                            <i aria-hidden="true">→</i>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  ) : <div className="profile-relation-empty">등록된 관계가 없습니다.</div>}
+                </section>
               ) : (
                 <section className="profile-tab-section">
                   {curTab?.subtitle && <div className="sub">{curTab.subtitle}</div>}

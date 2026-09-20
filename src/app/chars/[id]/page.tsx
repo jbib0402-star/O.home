@@ -359,6 +359,7 @@ function CharDetailInner() {
                 </span>
               )}
 
+              {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
               <div className="profile-name" style={{
                 fontFamily: familyOf(eff.fontId) ?? 'var(--serif)',
                 '--character-name-size': (eff.nameSize ?? 38) + 'px',
@@ -366,7 +367,6 @@ function CharDetailInner() {
               } as React.CSSProperties}>{eff.name}</div>
               {eff.quote && <div className="profile-quote">&quot; {eff.quote} &quot;</div>}
               {eff.altName && <div className="profile-alt-name">{eff.altName}</div>}
-              {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
 
               {!!eff.keywords?.length && (
                 <div className="profile-keywords" aria-label="성격 키워드">

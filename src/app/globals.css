@@ -2122,9 +2122,9 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-info{grid-column:1;grid-row:1;min-width:0;min-height:100vh;padding:clamp(82px,9vh,128px) clamp(34px,4vw,72px) 100px;background:color-mix(in srgb,var(--panel-solid) 78%,transparent);backdrop-filter:blur(14px);font-family:var(--sans)}
 .profile-editorial-info .profile-info-head{margin-bottom:18px;padding-bottom:0}
 .profile-editorial-info .profile-name{font-size:clamp(38px,var(--character-name-size,48px),72px);letter-spacing:.08em;line-height:1.04}
-.profile-editorial-info .profile-alt-name{margin-top:9px;color:var(--faint);font-family:var(--serif);font-size:calc(11px*var(--fs,1));letter-spacing:.13em;line-height:1.35}
-.profile-editorial-info .profile-sub{margin-top:11px;max-width:52ch}
-.profile-editorial-info .profile-quote{margin-top:13px;max-width:58ch;color:var(--sub);font-family:var(--serif);font-size:clamp(15px,calc(17px*var(--fs,1)),20px);font-weight:500;line-height:1.6;letter-spacing:.02em;text-wrap:balance}
+.profile-editorial-info .profile-sub{margin:0 0 8px;max-width:52ch;color:var(--faint);font-size:calc(10px*var(--fs,1));font-weight:600;letter-spacing:.12em;line-height:1.45}
+.profile-editorial-info .profile-quote{margin-top:12px;max-width:58ch;color:var(--sub);font-family:var(--serif);font-size:clamp(15px,calc(17px*var(--fs,1)),20px);font-weight:500;line-height:1.6;letter-spacing:.02em;text-wrap:balance}
+.profile-editorial-info .profile-alt-name{margin-top:8px;color:var(--faint);font-family:var(--serif);font-size:calc(11px*var(--fs,1));letter-spacing:.13em;line-height:1.35}
 .profile-keywords{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:17px}
 .profile-keywords span{padding:6px 10px;border-radius:4px;background:color-mix(in srgb,var(--accent) 78%,var(--panel-solid));color:var(--btn-dark-fg,#fff);font-size:calc(10px*var(--fs,1));font-weight:700;line-height:1;letter-spacing:.02em;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 10%,transparent)}
 .profile-keywords span:nth-child(3n+2){background:color-mix(in srgb,var(--ink) 80%,var(--panel-solid));color:var(--panel-solid)}

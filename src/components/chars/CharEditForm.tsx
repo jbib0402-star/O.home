@@ -365,10 +365,10 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
         <button className="btn btn-ghost" style={addBtn}
           onClick={() => setColors(l => [...l, { id: newId(), hex: '#888888', label: '' }])}>＋ ADD COLOR</button>
 
-        {/* 기본 소개 본문 — 리치 에디터 */}
-        <label className="k-label" style={{ margin: 0 }}>기본 정보 소개 본문</label>
+        {/* 기본 정보 아래에 바로 이어지는 기타사항 — 리치 에디터 */}
+        <label className="k-label" style={{ margin: 0 }}>기타사항</label>
         <RichEditor value={basicHtml} onChange={setBasicHtml}
-          placeholder="캐릭터 소개를 작성하세요 — 이미지 삽입 가능 (스크립트 불허 6.3)" />
+          placeholder="기본 정보 아래에 표시할 기타사항을 작성하세요 — 이미지 삽입 가능" />
 
         {/* 추가 탭 — 목록만, 내용은 전용 화면에서 */}
         <label className="k-label" style={{ margin: 0 }}>추가 탭 — 내용은 [편집]을 눌러 전용 화면에서 작성</label>

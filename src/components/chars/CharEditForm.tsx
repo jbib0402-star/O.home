@@ -3,7 +3,7 @@
 // 모달이 아니라 페이지라 잘못 클릭해도 닫히지 않음. 탭 내용은 별도 편집 화면으로 전환해 작성.
 // 두상(목록용)과 전신/아트(상세용)를 서로 다른 파일 참조로 저장한다.
 import React, { useEffect, useRef, useState } from 'react';
-import { Character, CharacterImageSlide, CharacterManualRelation, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt, CharacterWorkStatus, CHARACTER_WORK_STATUS_OPTIONS, characterWorkStatusMeta } from '@/lib/charStore';
+import { Character, CharacterManualRelation, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt, CharacterWorkStatus, CHARACTER_WORK_STATUS_OPTIONS, characterWorkStatusMeta } from '@/lib/charStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
@@ -16,7 +16,7 @@ import { DragList } from '@/components/ui/DragList';
 import { useConfirmDelete } from '@/components/ui/Modal';
 import { SymbolInput } from '@/components/ui/SymbolInput';
 import { fileDrop } from '@/lib/dnd';
-import { isValidSlug, normalizeInternalLink, slugify } from '@/lib/link';
+import { isValidSlug, slugify } from '@/lib/link';
 import { useToast } from '@/components/ui/Toast';
 import { Lightbox } from '@/components/ui/Lightbox';
 
@@ -24,7 +24,6 @@ interface SpecRow { id: string; label: string; value: string }
 interface ColorRow extends ColorChip { id: string }
 interface ArtItem { id: string; ref?: string; url?: string; file?: File }
 interface OutfitItem extends ArtItem { label: string }
-interface CharacterImageItem extends ArtItem { link: string; crop?: CropValue }
 interface ManualRelationItem {
   id: string;
   name: string;
@@ -95,15 +94,6 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [outfits, setOutfits] = useState<OutfitItem[]>(() =>
     (initial?.outfits ?? []).map(o => ({ id: o.id, label: o.label, ref: o.imgId })));
   const outfitFileFor = useRef<string | null>(null);
-  const [imageSlides, setImageSlides] = useState<CharacterImageItem[]>(() =>
-    (initial?.imageSlides ?? []).map(s => ({
-      id: s.id, ref: s.imgId, link: s.link ?? '', crop: s.crop,
-    })));
-  const [imageFit, setImageFit] = useState<'cover' | 'contain'>(initial?.imageFit ?? 'cover');
-  const [imageInterval, setImageInterval] = useState(initial?.imageInterval ?? 5);
-  const [imageRounded, setImageRounded] = useState(initial?.imageRounded ?? true);
-  const imageFileFor = useRef<string | null>(null);
-  const [imageCropId, setImageCropId] = useState<string | null>(null);
   const [manualRelations, setManualRelations] = useState<ManualRelationItem[]>(() =>
     (initial?.manualRelations ?? []).map(r => ({
       id: r.id, name: r.name, relation: r.relation, description: r.description ?? '',
@@ -163,26 +153,6 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
     setManualRelationCropId(id);
   };
 
-  const changeProfileImages = (list: FileList | null) => {
-    const files = Array.from(list ?? []);
-    if (!files.length) return;
-    const target = imageFileFor.current;
-    imageFileFor.current = null;
-    if (target) {
-      const file = files[0];
-      setImageSlides(prev => prev.map(s => s.id === target ? {
-        ...s, file, url: URL.createObjectURL(file), crop: undefined,
-      } : s));
-      if (imageFit === 'cover') setImageCropId(target);
-      return;
-    }
-    const added = files.map(file => ({
-      id: newId(), file, url: URL.createObjectURL(file), link: '',
-    }));
-    setImageSlides(prev => [...prev, ...added]);
-    if (added.length === 1 && imageFit === 'cover') setImageCropId(added[0].id);
-  };
-
   const save = async () => {
     if (!name.trim()) { toast('이름을 입력해 주세요'); return; }
     if (auLabelEditable && !profileAuLabel.trim()) { toast('AU 이름을 입력해 주세요'); return; }
@@ -202,7 +172,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       if (!isValidSlug(slug)) { toast('주소는 영문 소문자·숫자·하이픈만 쓸 수 있습니다'); return; }
       if (existingIds?.includes(slug)) { toast('이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요'); return; }
     }
-    const [artIds, thumbId, outfitRows, manualRelationRows, imageSlideRows] = await Promise.all([
+    const [artIds, thumbId, outfitRows, manualRelationRows] = await Promise.all([
       Promise.all(arts.map(a => (a.file ? putBlob(a.file) : Promise.resolve(a.ref!)))),
       thumb ? (thumb.file ? putBlob(thumb.file) : Promise.resolve(thumb.ref)) : Promise.resolve(undefined),
       Promise.all(outfits.map(async o => ({
@@ -218,12 +188,6 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
         faceId: r.faceFile ? await putBlob(r.faceFile) : r.faceRef,
         faceCrop: r.faceCrop,
       } as CharacterManualRelation))),
-      Promise.all(imageSlides.map(async s => ({
-        id: s.id,
-        imgId: s.file ? await putBlob(s.file) : s.ref!,
-        crop: s.crop,
-        link: normalizeInternalLink(s.link) || undefined,
-      } as CharacterImageSlide))),
     ]);
     onSave({
       id: initial?.id ?? (slug || newId()),
@@ -234,10 +198,6 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       quote: quote.trim() || undefined,
       keywords: keywords.split(',').map(x => x.trim().replace(/^#/, '')).filter(Boolean),
       manualRelations: manualRelationRows,
-      imageSlides: imageSlideRows,
-      imageFit,
-      imageInterval,
-      imageRounded,
       workStatus: workStatus || undefined,
       workStatusCustom: workStatus === 'custom' ? (workStatusCustom.trim() || undefined) : undefined,
       color,
@@ -402,62 +362,6 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
           {...fileDrop(fl => addArts(fl))}>
           ＋ ADD ART
         </button>
-
-        {/* 상세 IMAGE 탭 — 메인 장식 이미지 위젯과 같은 슬라이드·크롭 방식 */}
-        <label className="k-label" style={{ margin: '8px 0 0' }}>
-          IMAGE 탭 위젯 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 여러 장 자동 전환 · 4:3 표시 · ⠿ 순서 변경</span>
-        </label>
-        {imageSlides.length > 0 && (
-          <DragList items={imageSlides} keyOf={s => s.id} onReorder={setImageSlides}
-            render={(s, index) => (
-              <div className="char-profile-image-edit-row">
-                <span className="drag-h">⠿</span>
-                <div className="char-profile-image-edit-preview">
-                  <ArtThumb item={s} crop={imageFit === 'cover' ? s.crop : undefined} />
-                </div>
-                <KInput placeholder="클릭 링크 (선택)" value={s.link} style={rowInp}
-                  onChange={e => setImageSlides(l => l.map(x => x.id === s.id ? { ...x, link: e.target.value } : x))} />
-                <div className="char-profile-image-edit-actions">
-                  <button type="button" className="btn btn-ghost" style={addBtn}
-                    onClick={() => { imageFileFor.current = s.id; document.getElementById('chProfileImagesF')?.click(); }}>이미지 변경</button>
-                  {imageFit === 'cover' && (
-                    <button type="button" className="btn btn-ghost" style={addBtn}
-                      onClick={() => setImageCropId(s.id)}>✂ 위치</button>
-                  )}
-                </div>
-                <span className="fx" onClick={() => del.ask(
-                  `${index + 1}번째 IMAGE 탭 이미지를 삭제하시겠습니까?`,
-                  () => setImageSlides(l => l.filter(x => x.id !== s.id)),
-                  '원본 파일과 전신/아트 이미지는 삭제되지 않습니다.',
-                )}>✕</span>
-              </div>
-            )} />
-        )}
-        <input id="chProfileImagesF" type="file" accept="image/*" multiple style={{ display: 'none' }}
-          onChange={e => { changeProfileImages(e.target.files); e.target.value = ''; }} />
-        <button type="button" className="btn btn-ghost" style={addBtn}
-          onClick={() => { imageFileFor.current = null; document.getElementById('chProfileImagesF')?.click(); }}
-          {...fileDrop(fl => { imageFileFor.current = null; changeProfileImages(fl); })}>
-          ＋ ADD IMAGE
-        </button>
-        <div className="char-profile-image-options">
-          <span className="cp-lb">표시</span>
-          <div className="mini-seg">
-            <button type="button" className={imageFit === 'cover' ? 'on' : ''} onClick={() => setImageFit('cover')}>꽉 채움</button>
-            <button type="button" className={imageFit === 'contain' ? 'on' : ''} onClick={() => setImageFit('contain')}>비율 유지</button>
-          </div>
-          <span className="cp-lb">모서리</span>
-          <div className="mini-seg">
-            <button type="button" className={imageRounded ? 'on' : ''} onClick={() => setImageRounded(true)}>둥글게</button>
-            <button type="button" className={!imageRounded ? 'on' : ''} onClick={() => setImageRounded(false)}>각지게</button>
-          </div>
-          {imageSlides.length > 1 && (
-            <><span className="cp-lb">전환</span><KStep value={imageInterval} min={2} max={60} suffix="초" onChange={setImageInterval} /></>
-          )}
-        </div>
-        <p className="hint" style={{ margin: 0 }}>
-          ※ 캐릭터 상세의 IMAGE 탭에 표시되며 ORIGINAL과 각 AU에 따로 저장됩니다. 링크는 비워도 됩니다.
-        </p>
 
         {/* 기본 정보 스펙 */}
         <label className="k-label" style={{ margin: 0 }}>기본 정보 항목</label>
@@ -730,18 +634,6 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
             }} />
         );
       })()}
-      {imageCropId && (() => {
-        const target = imageSlides.find(s => s.id === imageCropId);
-        if (!target) return null;
-        return (
-          <ProfileImageCrop item={target} crop={target.crop}
-            onClose={() => setImageCropId(null)}
-            onApply={c => {
-              setImageSlides(l => l.map(s => s.id === target.id ? { ...s, crop: c } : s));
-              setImageCropId(null);
-            }} />
-        );
-      })()}
       {/* 아트 원본 보기 — 아직 저장 전 파일은 url, 저장된 것은 ref (Lightbox가 둘 다 처리) */}
       {lb !== null && (
         <Lightbox srcs={arts.map(a => a.url ?? a.ref ?? '')} index={lb} onClose={() => setLb(null)} />
@@ -819,14 +711,4 @@ function ManualRelationCrop({ item, crop, onClose, onApply }: {
   const src = item.url ?? loaded;
   if (!src) return null;
   return <CropEditor open src={src} aspect="1:1" initial={crop} onClose={onClose} onApply={onApply} />;
-}
-
-/** IMAGE 탭의 고정 4:3 프레임에 맞춘 위치 조절. */
-function ProfileImageCrop({ item, crop, onClose, onApply }: {
-  item: ArtItem; crop?: CropValue; onClose: () => void; onApply: (c: CropValue) => void;
-}) {
-  const loaded = useBlobUrl(item.ref);
-  const src = item.url ?? loaded;
-  if (!src) return null;
-  return <CropEditor open src={src} aspect="4:3" initial={crop} onClose={onClose} onApply={onApply} />;
 }

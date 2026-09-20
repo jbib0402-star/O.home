@@ -36,14 +36,6 @@ export interface CharacterManualRelation {
   faceCrop?: import("@/components/ui/CropEditor").CropValue;
 }
 
-/** 캐릭터 상세 IMAGE 탭에 표시하는 이미지 위젯 장면. */
-export interface CharacterImageSlide {
-  id: string;
-  imgId: string;
-  crop?: import("@/components/ui/CropEditor").CropValue;
-  link?: string;
-}
-
 export type CharacterWorkStatus = 'construction' | 'editing' | 'image-pending' | 'update-soon' | 'hold' | 'custom';
 
 export const CHARACTER_WORK_STATUS_OPTIONS: { value: CharacterWorkStatus; label: string; icon: string }[] = [
@@ -72,10 +64,6 @@ export interface Character {
   quote?: string;        // 캐릭터 대표 한마디/대사
   keywords?: string[];   // 이름 아래에 표시하는 성격 키워드 태그
   manualRelations?: CharacterManualRelation[]; // 자관 자동 연결 아래에 표시하는 직접 추가 관계
-  imageSlides?: CharacterImageSlide[]; // 상세 IMAGE 탭의 이미지 위젯
-  imageFit?: 'cover' | 'contain';
-  imageInterval?: number;
-  imageRounded?: boolean;
   workStatus?: CharacterWorkStatus; // 프로필 작업중 상태 뱃지
   workStatusCustom?: string;        // 직접 입력 상태 문구
   color: string;         // 대표 테마색 (말풍선·리스트 점)
@@ -137,10 +125,6 @@ export interface AuCharProfile {
   quote?: string;
   keywords?: string[];
   manualRelations?: CharacterManualRelation[];
-  imageSlides?: CharacterImageSlide[];
-  imageFit?: 'cover' | 'contain';
-  imageInterval?: number;
-  imageRounded?: boolean;
   workStatus?: CharacterWorkStatus | null; // null = AU에서 상태 뱃지 없음
   workStatusCustom?: string;
   color?: string;
@@ -182,10 +166,6 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     quote: p.quote,
     keywords: p.keywords ?? [],
     manualRelations: p.manualRelations ?? [],
-    imageSlides: p.imageSlides ?? [],
-    imageFit: p.imageFit ?? 'cover',
-    imageInterval: p.imageInterval ?? 5,
-    imageRounded: p.imageRounded ?? true,
     ...(p.workStatus !== undefined ? {
       workStatus: p.workStatus ?? undefined,
       workStatusCustom: p.workStatus ? p.workStatusCustom : undefined,

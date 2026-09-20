@@ -2154,18 +2154,6 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-tab-section{padding-top:26px}
 .profile-tab-section>.sub{margin-bottom:20px}
 .profile-tab-section .profile-tab-copy{padding-top:24px}
-.profile-images-section{padding-top:30px}
-.profile-image-widget{position:relative;width:100%;aspect-ratio:4/3;overflow:hidden;background:var(--crop-bg);border:1px solid var(--line);box-shadow:0 12px 34px color-mix(in srgb,var(--ink) 8%,transparent)}
-.profile-image-widget.is-rounded{border-radius:14px}
-.profile-image-stage{position:absolute;inset:0;width:100%;height:100%;padding:0;border:0;background:transparent;overflow:hidden;color:inherit;text-align:inherit}
-.profile-image-stage:not(:disabled){cursor:var(--cur-pointer,pointer)}
-.profile-image-stage>div,.profile-image-stage img{width:100%;height:100%}
-.profile-image-contain{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;background:var(--crop-bg)}
-.profile-image-dots{position:absolute;left:50%;bottom:14px;z-index:3;display:flex;align-items:center;gap:6px;transform:translateX(-50%)}
-.profile-image-dots button{width:7px;height:7px;padding:0;border-radius:99px;background:rgba(255,255,255,.58);box-shadow:0 1px 5px rgba(0,0,0,.36);transition:.18s}
-.profile-image-dots button.on{width:20px;background:#fff}
-.profile-image-count{position:absolute;right:13px;bottom:12px;z-index:3;padding:4px 7px;border-radius:999px;color:#fff;background:rgba(18,20,25,.56);font-size:8px;letter-spacing:.1em;backdrop-filter:blur(5px)}
-.profile-image-empty{padding:70px 20px;border:1px dashed var(--line);border-radius:12px;color:var(--faint);font-size:12px;text-align:center}
 .profile-relations-section{padding-top:30px}
 .profile-relation-group+.profile-relation-group{margin-top:28px;padding-top:25px;border-top:1px solid var(--line)}
 .profile-relation-group-label{display:flex;align-items:center;gap:9px;margin-bottom:12px;color:var(--faint);font-size:10.5px;letter-spacing:.1em}
@@ -2209,11 +2197,6 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .char-manual-relation-edit-face{position:relative;width:72px;aspect-ratio:1;border-radius:8px;overflow:hidden;display:grid;place-items:center;text-align:center;background:var(--crop-bg);color:var(--faint);font-size:9px;line-height:1.4}
 .char-manual-relation-edit-face>div,.char-manual-relation-edit-face img{width:100%;height:100%}
 .char-manual-relation-edit-fields,.char-manual-relation-edit-actions{display:grid;gap:6px;min-width:0}
-.char-profile-image-edit-row{display:grid;grid-template-columns:auto 104px minmax(160px,1fr) auto auto;align-items:center;gap:9px;width:100%;padding:9px;border:1px solid var(--line);border-radius:10px}
-.char-profile-image-edit-preview{position:relative;width:104px;aspect-ratio:4/3;overflow:hidden;border-radius:7px;background:var(--crop-bg)}
-.char-profile-image-edit-preview>div,.char-profile-image-edit-preview img{width:100%;height:100%}
-.char-profile-image-edit-actions{display:grid;gap:6px}
-.char-profile-image-options{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:9px 11px;border:1px solid var(--line);border-radius:9px;background:color-mix(in srgb,var(--panel-solid) 68%,transparent)}
 
 /* 중간 화면 — 레일을 상단 두 줄 내비로 바꾸고 전신/정보를 세로로 쌓는다. */
 @media(max-width:1100px){
@@ -2254,7 +2237,6 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-au-card{flex:0 0 198px;scroll-snap-align:start}
   .profile-manual-relation-card{grid-template-columns:74px minmax(0,1fr);gap:14px;min-height:100px;padding:12px}.profile-manual-relation-face{width:74px}
   .char-manual-relation-edit-row{grid-template-columns:auto 62px minmax(0,1fr) auto}.char-manual-relation-edit-face{width:62px}.char-manual-relation-edit-actions{grid-column:3/5;grid-template-columns:1fr 1fr}.char-manual-relation-edit-row>.fx{grid-column:4;grid-row:1}
-  .char-profile-image-edit-row{grid-template-columns:auto 88px minmax(0,1fr) auto}.char-profile-image-edit-preview{width:88px}.char-profile-image-edit-actions{grid-column:3/5;grid-template-columns:1fr 1fr}.char-profile-image-edit-row>.fx{grid-column:4;grid-row:1}
   .profile-au-card-add{flex-basis:142px}
   .profile-editorial .profile-au-empty{width:calc(100% - 28px);padding:38px 20px;margin:36px auto}
   .char-outfit-edit-row{grid-template-columns:auto 56px minmax(0,1fr) auto;gap:7px}

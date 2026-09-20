@@ -39,6 +39,7 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
     sub: '',
     quote: '',
     keywords: [],
+    manualRelations: [],
     workStatus: null,
     workStatusCustom: undefined,
     basicHtml: '',
@@ -434,8 +435,10 @@ function CharDetailInner() {
               ) : tab === 'relations' ? (
                 <section className="profile-relations-section">
                   <div className="profile-section-label">RELATIONSHIPS <span>관계</span></div>
-                  {relatedRels.length > 0 ? (
-                    <div className="profile-relation-list">
+                  {relatedRels.length > 0 && (
+                    <div className="profile-relation-group">
+                      <div className="profile-relation-group-label"><b>AUTO</b><span>자관에서 연결됨</span></div>
+                      <div className="profile-relation-list">
                       {relatedRels.map(r => {
                         const [selectedRelId, selectedAuId] = auKey && !isCharacterAuKey(auKey)
                           ? auKey.split(':') : ['', ''];
@@ -450,8 +453,31 @@ function CharDetailInner() {
                           </button>
                         );
                       })}
+                      </div>
                     </div>
-                  ) : <div className="profile-relation-empty">등록된 관계가 없습니다.</div>}
+                  )}
+                  {(eff.manualRelations ?? []).length > 0 && (
+                    <div className="profile-relation-group profile-manual-relation-group">
+                      <div className="profile-relation-group-label"><b>PROFILE</b><span>직접 추가 관계</span></div>
+                      <div className="profile-manual-relation-list">
+                        {(eff.manualRelations ?? []).map(r => (
+                          <article className="profile-manual-relation-card" key={r.id}>
+                            <div className="profile-manual-relation-face">
+                              <CroppedBlobImg fileRef={r.faceId} crop={r.faceCrop} label={r.name.slice(0, 1)} alt={`${r.name} 두상`} />
+                            </div>
+                            <div className="profile-manual-relation-copy">
+                              <small>{r.relation}</small>
+                              <b>{r.name}</b>
+                              {r.description && <p>{r.description}</p>}
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {relatedRels.length === 0 && (eff.manualRelations ?? []).length === 0 && (
+                    <div className="profile-relation-empty">등록된 관계가 없습니다.</div>
+                  )}
                 </section>
               ) : (
                 <section className="profile-tab-section">

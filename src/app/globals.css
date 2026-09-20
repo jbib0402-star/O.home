@@ -2156,18 +2156,18 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-tab-section .profile-tab-copy{padding-top:24px}
 .profile-relations-section{padding-top:30px}
 .profile-relation-group+.profile-relation-group{margin-top:28px;padding-top:25px;border-top:1px solid var(--line)}
-.profile-relation-group-label{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--faint);font-size:9px;letter-spacing:.1em}
-.profile-relation-group-label b{color:var(--accent);font-size:8px;letter-spacing:.15em}
+.profile-relation-group-label{display:flex;align-items:center;gap:9px;margin-bottom:12px;color:var(--faint);font-size:10.5px;letter-spacing:.1em}
+.profile-relation-group-label b{color:var(--accent);font-size:9.5px;letter-spacing:.15em}
 .profile-relation-list{display:grid;gap:10px}
 .profile-relation-card{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:16px 18px;border:1px solid var(--line);border-radius:11px;background:color-mix(in srgb,var(--panel-solid) 82%,transparent);color:var(--ink);text-align:left;transition:.18s}
 .profile-relation-card:hover{transform:translateX(3px);border-color:color-mix(in srgb,var(--accent) 48%,var(--line));box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 8%,transparent)}
 .profile-relation-card>span{min-width:0}.profile-relation-card small{display:block;margin-bottom:4px;color:var(--accent);font-size:8px;font-weight:800;letter-spacing:.14em}.profile-relation-card b{display:block;overflow:hidden;text-overflow:ellipsis;font-family:var(--serif);font-size:16px;letter-spacing:.06em;white-space:nowrap}.profile-relation-card em{display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;color:var(--faint);font-size:10px;font-style:normal;white-space:nowrap}.profile-relation-card>i{flex:0 0 auto;color:var(--accent);font-size:18px;font-style:normal}
 .profile-relation-empty{padding:34px 18px;border:1px dashed var(--line);border-radius:11px;color:var(--faint);font-size:12px;text-align:center}
-.profile-manual-relation-list{display:grid;gap:10px}
-.profile-manual-relation-card{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:16px;min-height:92px;padding:10px 15px 10px 10px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--panel-solid) 82%,transparent)}
-.profile-manual-relation-face{position:relative;width:72px;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--crop-bg);color:var(--faint);font-family:var(--serif);font-size:18px;display:grid;place-items:center}
+.profile-manual-relation-list{display:grid;gap:13px}
+.profile-manual-relation-card{display:grid;grid-template-columns:88px minmax(0,1fr);align-items:center;gap:19px;min-height:116px;padding:13px 20px 13px 13px;border:1px solid var(--line);border-radius:14px;background:color-mix(in srgb,var(--panel-solid) 82%,transparent)}
+.profile-manual-relation-face{position:relative;width:88px;aspect-ratio:1;border-radius:10px;overflow:hidden;background:var(--crop-bg);color:var(--faint);font-family:var(--serif);font-size:21px;display:grid;place-items:center}
 .profile-manual-relation-face>div,.profile-manual-relation-face img{width:100%;height:100%}
-.profile-manual-relation-copy{min-width:0}.profile-manual-relation-copy small{display:block;margin-bottom:3px;color:var(--accent);font-size:9px;font-weight:800;letter-spacing:.11em}.profile-manual-relation-copy b{display:block;font-family:var(--serif);font-size:17px;letter-spacing:.05em}.profile-manual-relation-copy p{margin:6px 0 0;color:var(--sub);font-size:11px;line-height:1.65;white-space:pre-wrap}
+.profile-manual-relation-copy{min-width:0}.profile-manual-relation-copy small{display:block;margin-bottom:5px;color:var(--accent);font-size:10.5px;font-weight:800;letter-spacing:.11em}.profile-manual-relation-copy b{display:block;font-family:var(--serif);font-size:19px;letter-spacing:.05em}.profile-manual-relation-copy p{margin:8px 0 0;color:var(--sub);font-size:12.5px;line-height:1.7;white-space:pre-wrap}
 
 .profile-editorial .profile-au-empty{grid-column:1/-1;grid-row:1;align-self:center;justify-self:center;width:min(620px,calc(100% - 64px));padding:58px;text-align:center;background:color-mix(in srgb,var(--panel-solid) 86%,transparent);box-shadow:none}
 .profile-au-empty-title{font-family:var(--serif);font-size:28px;letter-spacing:.14em;margin-bottom:9px}
@@ -2235,7 +2235,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-au-shelf{padding:32px 16px 42px}
   .profile-au-cards{display:flex;flex-direction:row;gap:10px;padding-bottom:8px;overflow-x:auto;scroll-snap-type:x proximity}
   .profile-au-card{flex:0 0 198px;scroll-snap-align:start}
-  .profile-manual-relation-card{grid-template-columns:62px minmax(0,1fr);gap:12px}.profile-manual-relation-face{width:62px}
+  .profile-manual-relation-card{grid-template-columns:74px minmax(0,1fr);gap:14px;min-height:100px;padding:12px}.profile-manual-relation-face{width:74px}
   .char-manual-relation-edit-row{grid-template-columns:auto 62px minmax(0,1fr) auto}.char-manual-relation-edit-face{width:62px}.char-manual-relation-edit-actions{grid-column:3/5;grid-template-columns:1fr 1fr}.char-manual-relation-edit-row>.fx{grid-column:4;grid-row:1}
   .profile-au-card-add{flex-basis:142px}
   .profile-editorial .profile-au-empty{width:calc(100% - 28px);padding:38px 20px;margin:36px auto}

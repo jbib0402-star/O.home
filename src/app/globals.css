@@ -2155,11 +2155,19 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-tab-section>.sub{margin-bottom:20px}
 .profile-tab-section .profile-tab-copy{padding-top:24px}
 .profile-relations-section{padding-top:30px}
+.profile-relation-group+.profile-relation-group{margin-top:28px;padding-top:25px;border-top:1px solid var(--line)}
+.profile-relation-group-label{display:flex;align-items:center;gap:8px;margin-bottom:10px;color:var(--faint);font-size:9px;letter-spacing:.1em}
+.profile-relation-group-label b{color:var(--accent);font-size:8px;letter-spacing:.15em}
 .profile-relation-list{display:grid;gap:10px}
 .profile-relation-card{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;padding:16px 18px;border:1px solid var(--line);border-radius:11px;background:color-mix(in srgb,var(--panel-solid) 82%,transparent);color:var(--ink);text-align:left;transition:.18s}
 .profile-relation-card:hover{transform:translateX(3px);border-color:color-mix(in srgb,var(--accent) 48%,var(--line));box-shadow:0 8px 22px color-mix(in srgb,var(--accent) 8%,transparent)}
 .profile-relation-card>span{min-width:0}.profile-relation-card small{display:block;margin-bottom:4px;color:var(--accent);font-size:8px;font-weight:800;letter-spacing:.14em}.profile-relation-card b{display:block;overflow:hidden;text-overflow:ellipsis;font-family:var(--serif);font-size:16px;letter-spacing:.06em;white-space:nowrap}.profile-relation-card em{display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;color:var(--faint);font-size:10px;font-style:normal;white-space:nowrap}.profile-relation-card>i{flex:0 0 auto;color:var(--accent);font-size:18px;font-style:normal}
 .profile-relation-empty{padding:34px 18px;border:1px dashed var(--line);border-radius:11px;color:var(--faint);font-size:12px;text-align:center}
+.profile-manual-relation-list{display:grid;gap:10px}
+.profile-manual-relation-card{display:grid;grid-template-columns:72px minmax(0,1fr);align-items:center;gap:16px;min-height:92px;padding:10px 15px 10px 10px;border:1px solid var(--line);border-radius:12px;background:color-mix(in srgb,var(--panel-solid) 82%,transparent)}
+.profile-manual-relation-face{position:relative;width:72px;aspect-ratio:1;border-radius:9px;overflow:hidden;background:var(--crop-bg);color:var(--faint);font-family:var(--serif);font-size:18px;display:grid;place-items:center}
+.profile-manual-relation-face>div,.profile-manual-relation-face img{width:100%;height:100%}
+.profile-manual-relation-copy{min-width:0}.profile-manual-relation-copy small{display:block;margin-bottom:3px;color:var(--accent);font-size:9px;font-weight:800;letter-spacing:.11em}.profile-manual-relation-copy b{display:block;font-family:var(--serif);font-size:17px;letter-spacing:.05em}.profile-manual-relation-copy p{margin:6px 0 0;color:var(--sub);font-size:11px;line-height:1.65;white-space:pre-wrap}
 
 .profile-editorial .profile-au-empty{grid-column:1/-1;grid-row:1;align-self:center;justify-self:center;width:min(620px,calc(100% - 64px));padding:58px;text-align:center;background:color-mix(in srgb,var(--panel-solid) 86%,transparent);box-shadow:none}
 .profile-au-empty-title{font-family:var(--serif);font-size:28px;letter-spacing:.14em;margin-bottom:9px}
@@ -2185,6 +2193,10 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .char-outfit-edit-row{display:grid;grid-template-columns:auto 62px minmax(120px,1fr) auto auto;align-items:center;gap:9px;width:100%;padding:5px 0}
 .char-outfit-edit-preview{width:62px;aspect-ratio:3/4;border-radius:7px;overflow:hidden;position:relative;display:grid;place-items:center;flex-shrink:0;background:var(--crop-bg);color:var(--faint);font-size:9px}
 .char-outfit-edit-preview>div,.char-outfit-edit-preview img{width:100%;height:100%}
+.char-manual-relation-edit-row{display:grid;grid-template-columns:auto 72px minmax(180px,1fr) auto auto;align-items:center;gap:9px;width:100%;padding:9px;border:1px solid var(--line);border-radius:10px}
+.char-manual-relation-edit-face{position:relative;width:72px;aspect-ratio:1;border-radius:8px;overflow:hidden;display:grid;place-items:center;text-align:center;background:var(--crop-bg);color:var(--faint);font-size:9px;line-height:1.4}
+.char-manual-relation-edit-face>div,.char-manual-relation-edit-face img{width:100%;height:100%}
+.char-manual-relation-edit-fields,.char-manual-relation-edit-actions{display:grid;gap:6px;min-width:0}
 
 /* 중간 화면 — 레일을 상단 두 줄 내비로 바꾸고 전신/정보를 세로로 쌓는다. */
 @media(max-width:1100px){
@@ -2223,6 +2235,8 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-au-shelf{padding:32px 16px 42px}
   .profile-au-cards{display:flex;flex-direction:row;gap:10px;padding-bottom:8px;overflow-x:auto;scroll-snap-type:x proximity}
   .profile-au-card{flex:0 0 198px;scroll-snap-align:start}
+  .profile-manual-relation-card{grid-template-columns:62px minmax(0,1fr);gap:12px}.profile-manual-relation-face{width:62px}
+  .char-manual-relation-edit-row{grid-template-columns:auto 62px minmax(0,1fr) auto}.char-manual-relation-edit-face{width:62px}.char-manual-relation-edit-actions{grid-column:3/5;grid-template-columns:1fr 1fr}.char-manual-relation-edit-row>.fx{grid-column:4;grid-row:1}
   .profile-au-card-add{flex-basis:142px}
   .profile-editorial .profile-au-empty{width:calc(100% - 28px);padding:38px 20px;margin:36px auto}
   .char-outfit-edit-row{grid-template-columns:auto 56px minmax(0,1fr) auto;gap:7px}

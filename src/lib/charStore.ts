@@ -26,6 +26,16 @@ export interface CharTab {
   visibility?: 'public' | 'private';
 }
 
+/** 캐릭터 프로필에서 직접 적는 관계. 자관(Relation) 데이터와는 별도로 ORIGINAL/AU가 각각 소유한다. */
+export interface CharacterManualRelation {
+  id: string;
+  name: string;
+  relation: string;
+  description?: string;
+  faceId?: string;
+  faceCrop?: import("@/components/ui/CropEditor").CropValue;
+}
+
 export type CharacterWorkStatus = 'construction' | 'editing' | 'image-pending' | 'update-soon' | 'hold' | 'custom';
 
 export const CHARACTER_WORK_STATUS_OPTIONS: { value: CharacterWorkStatus; label: string; icon: string }[] = [
@@ -53,6 +63,7 @@ export interface Character {
   sub: string;           // 한 줄 소개
   quote?: string;        // 캐릭터 대표 한마디/대사
   keywords?: string[];   // 이름 아래에 표시하는 성격 키워드 태그
+  manualRelations?: CharacterManualRelation[]; // 자관 자동 연결 아래에 표시하는 직접 추가 관계
   workStatus?: CharacterWorkStatus; // 프로필 작업중 상태 뱃지
   workStatusCustom?: string;        // 직접 입력 상태 문구
   color: string;         // 대표 테마색 (말풍선·리스트 점)
@@ -113,6 +124,7 @@ export interface AuCharProfile {
   sub?: string;
   quote?: string;
   keywords?: string[];
+  manualRelations?: CharacterManualRelation[];
   workStatus?: CharacterWorkStatus | null; // null = AU에서 상태 뱃지 없음
   workStatusCustom?: string;
   color?: string;
@@ -153,6 +165,7 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     // 구형 AU 데이터에 필드가 없어도 현재 선택한 AU의 값만 보여 주어 프로필이 섞이지 않게 한다.
     quote: p.quote,
     keywords: p.keywords ?? [],
+    manualRelations: p.manualRelations ?? [],
     ...(p.workStatus !== undefined ? {
       workStatus: p.workStatus ?? undefined,
       workStatusCustom: p.workStatus ? p.workStatusCustom : undefined,

@@ -3,7 +3,7 @@
 // 모달이 아니라 페이지라 잘못 클릭해도 닫히지 않음. 탭 내용은 별도 편집 화면으로 전환해 작성.
 // 두상(목록용)과 전신/아트(상세용)를 서로 다른 파일 참조로 저장한다.
 import React, { useEffect, useRef, useState } from 'react';
-import { Character, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt, CharacterWorkStatus, CHARACTER_WORK_STATUS_OPTIONS, characterWorkStatusMeta } from '@/lib/charStore';
+import { Character, CharacterManualRelation, CharTab, ColorChip, Visibility, CharGrant, OutfitFullArt, CharacterWorkStatus, CHARACTER_WORK_STATUS_OPTIONS, characterWorkStatusMeta } from '@/lib/charStore';
 import { GrantsEditor } from '@/components/chars/GrantsEditor';
 import { newId } from '@/lib/postStore';
 import { putBlob, getBlob, useBlobUrl } from '@/lib/blobStore';
@@ -24,6 +24,16 @@ interface SpecRow { id: string; label: string; value: string }
 interface ColorRow extends ColorChip { id: string }
 interface ArtItem { id: string; ref?: string; url?: string; file?: File }
 interface OutfitItem extends ArtItem { label: string }
+interface ManualRelationItem {
+  id: string;
+  name: string;
+  relation: string;
+  description: string;
+  faceRef?: string;
+  faceUrl?: string;
+  faceFile?: File;
+  faceCrop?: CropValue;
+}
 
 function ArtThumb({ item, crop }: { item: ArtItem; crop?: CropValue }) {
   const loaded = useBlobUrl(item.ref);
@@ -84,6 +94,13 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [outfits, setOutfits] = useState<OutfitItem[]>(() =>
     (initial?.outfits ?? []).map(o => ({ id: o.id, label: o.label, ref: o.imgId })));
   const outfitFileFor = useRef<string | null>(null);
+  const [manualRelations, setManualRelations] = useState<ManualRelationItem[]>(() =>
+    (initial?.manualRelations ?? []).map(r => ({
+      id: r.id, name: r.name, relation: r.relation, description: r.description ?? '',
+      faceRef: r.faceId, faceCrop: r.faceCrop,
+    })));
+  const manualRelationFileFor = useRef<string | null>(null);
+  const [manualRelationCropId, setManualRelationCropId] = useState<string | null>(null);
   // 두상은 전신/아트와 별도 상태로 관리한다. 구 데이터의 fallback은 표시 화면에서만 적용하며
   // 여기서 자동으로 첫 아트를 thumbId로 변환하거나 저장하지 않는다.
   const [thumb, setThumb] = useState<ArtItem | null>(() => (
@@ -126,6 +143,16 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
     setCropOpen(true);
   };
 
+  const changeManualRelationFace = (id: string, list: FileList | null) => {
+    const file = list?.[0];
+    if (!file) return;
+    const faceUrl = URL.createObjectURL(file);
+    setManualRelations(prev => prev.map(r => (
+      r.id === id ? { ...r, faceFile: file, faceUrl, faceCrop: undefined } : r
+    )));
+    setManualRelationCropId(id);
+  };
+
   const save = async () => {
     if (!name.trim()) { toast('이름을 입력해 주세요'); return; }
     if (auLabelEditable && !profileAuLabel.trim()) { toast('AU 이름을 입력해 주세요'); return; }
@@ -133,12 +160,19 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       toast('의상 이름과 전신 이미지를 모두 등록해 주세요');
       return;
     }
+    const filledManualRelations = manualRelations.filter(r => (
+      r.name.trim() || r.relation.trim() || r.description.trim() || r.faceFile || r.faceRef
+    ));
+    if (filledManualRelations.some(r => !r.name.trim() || !r.relation.trim())) {
+      toast('직접 추가 관계의 이름과 관계명을 모두 입력해 주세요');
+      return;
+    }
     // 페이지 주소 (v1.9) — 유효성·중복 검사
     if (isNew && slug) {
       if (!isValidSlug(slug)) { toast('주소는 영문 소문자·숫자·하이픈만 쓸 수 있습니다'); return; }
       if (existingIds?.includes(slug)) { toast('이미 사용 중인 주소입니다 — 다른 주소를 입력해 주세요'); return; }
     }
-    const [artIds, thumbId, outfitRows] = await Promise.all([
+    const [artIds, thumbId, outfitRows, manualRelationRows] = await Promise.all([
       Promise.all(arts.map(a => (a.file ? putBlob(a.file) : Promise.resolve(a.ref!)))),
       thumb ? (thumb.file ? putBlob(thumb.file) : Promise.resolve(thumb.ref)) : Promise.resolve(undefined),
       Promise.all(outfits.map(async o => ({
@@ -146,6 +180,14 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
         label: o.label.trim(),
         imgId: o.file ? await putBlob(o.file) : o.ref!,
       } as OutfitFullArt))),
+      Promise.all(filledManualRelations.map(async r => ({
+        id: r.id,
+        name: r.name.trim(),
+        relation: r.relation.trim(),
+        description: r.description.trim() || undefined,
+        faceId: r.faceFile ? await putBlob(r.faceFile) : r.faceRef,
+        faceCrop: r.faceCrop,
+      } as CharacterManualRelation))),
     ]);
     onSave({
       id: initial?.id ?? (slug || newId()),
@@ -155,6 +197,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       sub: sub.trim(),
       quote: quote.trim() || undefined,
       keywords: keywords.split(',').map(x => x.trim().replace(/^#/, '')).filter(Boolean),
+      manualRelations: manualRelationRows,
       workStatus: workStatus || undefined,
       workStatusCustom: workStatus === 'custom' ? (workStatusCustom.trim() || undefined) : undefined,
       color,
@@ -340,6 +383,61 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
         <button className="btn btn-ghost" style={addBtn}
           onClick={() => setSpecs(l => [...l, { id: newId(), label: '', value: '' }])}>＋ ADD</button>
 
+        {/* 자관 자동 연결과 별개로 프로필에 직접 표시하는 관계 */}
+        <label className="k-label" style={{ margin: '8px 0 0' }}>
+          직접 추가 관계 <span style={{ fontWeight: 400, color: 'var(--faint)' }}>— 관계 탭의 자동 자관 아래에 표시 · ⠿ 순서 변경</span>
+        </label>
+        {manualRelations.length > 0 && (
+          <DragList items={manualRelations} keyOf={r => r.id} onReorder={setManualRelations}
+            render={r => {
+              const faceItem: ArtItem = { id: r.id, ref: r.faceRef, url: r.faceUrl, file: r.faceFile };
+              const hasFace = !!(r.faceRef || r.faceUrl || r.faceFile);
+              return (
+                <div className="char-manual-relation-edit-row">
+                  <span className="drag-h">⠿</span>
+                  <div className="char-manual-relation-edit-face">
+                    {hasFace ? <ArtThumb item={faceItem} crop={r.faceCrop} /> : <span>1:1<br />FACE</span>}
+                  </div>
+                  <div className="char-manual-relation-edit-fields">
+                    <KInput placeholder="상대 이름" value={r.name} style={rowInp}
+                      onChange={e => setManualRelations(l => l.map(x => x.id === r.id ? { ...x, name: e.target.value } : x))} />
+                    <KInput placeholder="관계명 (예: 소꿉친구)" value={r.relation} style={rowInp}
+                      onChange={e => setManualRelations(l => l.map(x => x.id === r.id ? { ...x, relation: e.target.value } : x))} />
+                    <KInput placeholder="관계 설명 (선택)" value={r.description} style={rowInp}
+                      onChange={e => setManualRelations(l => l.map(x => x.id === r.id ? { ...x, description: e.target.value } : x))} />
+                  </div>
+                  <div className="char-manual-relation-edit-actions">
+                    <button type="button" className="btn btn-ghost" style={addBtn}
+                      onClick={() => { manualRelationFileFor.current = r.id; document.getElementById('chManualRelationF')?.click(); }}>
+                      {hasFace ? '두상 변경' : '두상 등록'}
+                    </button>
+                    <button type="button" className="btn btn-ghost" style={addBtn} disabled={!hasFace}
+                      onClick={() => setManualRelationCropId(r.id)}>✂ 위치 조절</button>
+                  </div>
+                  <span className="fx" onClick={() => del.ask(
+                    `직접 추가 관계 「${r.name || '이름 없음'}」을 삭제하시겠습니까?`,
+                    () => setManualRelations(l => l.filter(x => x.id !== r.id)),
+                    '자동으로 연결된 자관에는 영향을 주지 않습니다.',
+                  )}>✕</span>
+                </div>
+              );
+            }} />
+        )}
+        <input id="chManualRelationF" type="file" accept="image/*" style={{ display: 'none' }}
+          onChange={e => {
+            const id = manualRelationFileFor.current;
+            if (id) changeManualRelationFace(id, e.target.files);
+            manualRelationFileFor.current = null;
+            e.target.value = '';
+          }} />
+        <button type="button" className="btn btn-ghost" style={addBtn}
+          onClick={() => setManualRelations(l => [...l, {
+            id: newId(), name: '', relation: '', description: '',
+          }])}>＋ ADD RELATION</button>
+        <p className="hint" style={{ margin: 0 }}>
+          ※ ORIGINAL과 각 AU에 따로 저장됩니다. 자관에서 자동 연결되는 관계는 이곳에서 수정되지 않습니다.
+        </p>
+
         {/* 테마 컬러 — 한 줄에 2개 */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
           <label className="k-label" style={{ margin: 0 }}>테마 컬러 (프로필 색 점 나열)</label>
@@ -523,6 +621,19 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
           onClose={() => setCropOpen(false)}
           onApply={c => { setThumbCrop(c); setCropOpen(false); }} />
       )}
+      {manualRelationCropId && (() => {
+        const target = manualRelations.find(r => r.id === manualRelationCropId);
+        if (!target) return null;
+        const item: ArtItem = { id: target.id, ref: target.faceRef, url: target.faceUrl, file: target.faceFile };
+        return (
+          <ManualRelationCrop item={item} crop={target.faceCrop}
+            onClose={() => setManualRelationCropId(null)}
+            onApply={c => {
+              setManualRelations(l => l.map(r => r.id === target.id ? { ...r, faceCrop: c } : r));
+              setManualRelationCropId(null);
+            }} />
+        );
+      })()}
       {/* 아트 원본 보기 — 아직 저장 전 파일은 url, 저장된 것은 ref (Lightbox가 둘 다 처리) */}
       {lb !== null && (
         <Lightbox srcs={arts.map(a => a.url ?? a.ref ?? '')} index={lb} onClose={() => setLb(null)} />
@@ -590,4 +701,14 @@ function ThumbCrop({ open, item, crop, onClose, onApply }: {
   const src = item.url || loadedUrl;
   if (!src || !open) return null;
   return <CropEditor open={open} src={src} aspect="3:4" initial={crop} onClose={onClose} onApply={onApply} />;
+}
+
+/** 직접 추가 관계의 두상은 상세 카드와 같은 1:1 비율로 조정한다. */
+function ManualRelationCrop({ item, crop, onClose, onApply }: {
+  item: ArtItem; crop?: CropValue; onClose: () => void; onApply: (c: CropValue) => void;
+}) {
+  const loaded = useBlobUrl(item.ref);
+  const src = item.url ?? loaded;
+  if (!src) return null;
+  return <CropEditor open src={src} aspect="1:1" initial={crop} onClose={onClose} onApply={onApply} />;
 }

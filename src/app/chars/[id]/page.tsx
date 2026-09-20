@@ -364,6 +364,7 @@ function CharDetailInner() {
                 '--character-name-size': (eff.nameSize ?? 38) + 'px',
                 fontWeight: 500,
               } as React.CSSProperties}>{eff.name}</div>
+              {eff.quote && <div className="profile-quote">&quot; {eff.quote} &quot;</div>}
               {eff.altName && <div className="profile-alt-name">{eff.altName}</div>}
               {eff.sub && <div className="sub profile-sub">{eff.sub}</div>}
 
@@ -421,11 +422,6 @@ function CharDetailInner() {
                           </div>
                         );
                       })}
-                      {eff.quote && (
-                        <div className="spec-item is-wide profile-quote-row">
-                          <dt>한마디</dt><dd>「{eff.quote}」</dd>
-                        </div>
-                      )}
                     </dl>
                   </section>
                   {basicHtml && (

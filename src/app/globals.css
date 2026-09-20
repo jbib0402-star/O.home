@@ -2124,7 +2124,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-info .profile-name{font-size:clamp(38px,var(--character-name-size,48px),72px);letter-spacing:.08em;line-height:1.04}
 .profile-editorial-info .profile-alt-name{margin-top:9px;color:var(--faint);font-family:var(--serif);font-size:calc(11px*var(--fs,1));letter-spacing:.13em;line-height:1.35}
 .profile-editorial-info .profile-sub{margin-top:11px;max-width:52ch}
-.profile-editorial-info .profile-quote{margin-top:16px;max-width:58ch;padding-left:12px;border-left:2px solid color-mix(in srgb,var(--accent) 42%,var(--line));color:var(--sub);font-family:var(--serif);font-size:calc(13px*var(--fs,1));font-style:italic;line-height:1.65}
+.profile-editorial-info .profile-quote{margin-top:13px;max-width:58ch;color:var(--sub);font-family:var(--serif);font-size:clamp(15px,calc(17px*var(--fs,1)),20px);font-weight:500;line-height:1.6;letter-spacing:.02em;text-wrap:balance}
 .profile-keywords{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin-top:17px}
 .profile-keywords span{padding:6px 10px;border-radius:4px;background:color-mix(in srgb,var(--accent) 78%,var(--panel-solid));color:var(--btn-dark-fg,#fff);font-size:calc(10px*var(--fs,1));font-weight:700;line-height:1;letter-spacing:.02em;box-shadow:0 4px 12px color-mix(in srgb,var(--accent) 10%,transparent)}
 .profile-keywords span:nth-child(3n+2){background:color-mix(in srgb,var(--ink) 80%,var(--panel-solid));color:var(--panel-solid)}
@@ -2142,8 +2142,6 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-info .profile-editorial-spec .spec-item.is-wide{grid-column:1/-1;grid-template-columns:minmax(86px,.2fr) minmax(0,1fr)}
 .profile-editorial-info .profile-editorial-spec dt{margin:0;color:var(--faint);font-size:calc(10px*var(--fs,1));letter-spacing:0;text-transform:none;line-height:1.65}
 .profile-editorial-info .profile-editorial-spec dd{font-size:calc(12px*var(--fs,1));font-weight:600;line-height:1.65}
-.profile-editorial-info .profile-editorial-spec .profile-quote-row{border-bottom:0}
-.profile-editorial-info .profile-editorial-spec .profile-quote-row dd{font-family:var(--serif);font-weight:500}
 .profile-editorial-info .profile-copy{padding-top:34px}
 .profile-editorial-info .profile-section-label{margin-bottom:16px;color:var(--accent)}
 .profile-editorial-info .profile-section-label span{margin-left:7px;color:var(--faint);font-size:.88em;letter-spacing:.08em}

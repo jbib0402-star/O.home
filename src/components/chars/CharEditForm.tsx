@@ -29,6 +29,7 @@ interface ManualRelationItem {
   name: string;
   relation: string;
   description: string;
+  color: string;
   faceRef?: string;
   faceUrl?: string;
   faceFile?: File;
@@ -97,6 +98,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [manualRelations, setManualRelations] = useState<ManualRelationItem[]>(() =>
     (initial?.manualRelations ?? []).map(r => ({
       id: r.id, name: r.name, relation: r.relation, description: r.description ?? '',
+      color: r.color ?? '#78ad94',
       faceRef: r.faceId, faceCrop: r.faceCrop,
     })));
   const manualRelationFileFor = useRef<string | null>(null);
@@ -185,6 +187,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
         name: r.name.trim(),
         relation: r.relation.trim(),
         description: r.description.trim() || undefined,
+        color: r.color,
         faceId: r.faceFile ? await putBlob(r.faceFile) : r.faceRef,
         faceCrop: r.faceCrop,
       } as CharacterManualRelation))),
@@ -405,6 +408,12 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
                       onChange={e => setManualRelations(l => l.map(x => x.id === r.id ? { ...x, relation: e.target.value } : x))} />
                     <KInput placeholder="관계 설명 (선택)" value={r.description} style={rowInp}
                       onChange={e => setManualRelations(l => l.map(x => x.id === r.id ? { ...x, description: e.target.value } : x))} />
+                    <label className="char-manual-relation-color">
+                      <span>메인 컬러</span>
+                      <ColorField value={r.color} onChange={color => setManualRelations(l => (
+                        l.map(x => x.id === r.id ? { ...x, color } : x)
+                      ))} />
+                    </label>
                   </div>
                   <div className="char-manual-relation-edit-actions">
                     <button type="button" className="btn btn-ghost" style={addBtn}
@@ -432,7 +441,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
           }} />
         <button type="button" className="btn btn-ghost" style={addBtn}
           onClick={() => setManualRelations(l => [...l, {
-            id: newId(), name: '', relation: '', description: '',
+            id: newId(), name: '', relation: '', description: '', color: '#78ad94',
           }])}>＋ ADD RELATION</button>
         <p className="hint" style={{ margin: 0 }}>
           ※ ORIGINAL과 각 AU에 따로 저장됩니다. 자관에서 자동 연결되는 관계는 이곳에서 수정되지 않습니다.

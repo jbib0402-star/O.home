@@ -52,6 +52,7 @@ export interface Character {
   altName?: string;      // 영문명/한자명 등 목록·상세에 함께 표시할 보조 이름
   sub: string;           // 한 줄 소개
   quote?: string;        // 캐릭터 대표 한마디/대사
+  keywords?: string[];   // 이름 아래에 표시하는 성격 키워드 태그
   workStatus?: CharacterWorkStatus; // 프로필 작업중 상태 뱃지
   workStatusCustom?: string;        // 직접 입력 상태 문구
   color: string;         // 대표 테마색 (말풍선·리스트 점)
@@ -111,6 +112,7 @@ export interface AuCharProfile {
   altName?: string;
   sub?: string;
   quote?: string;
+  keywords?: string[];
   workStatus?: CharacterWorkStatus | null; // null = AU에서 상태 뱃지 없음
   workStatusCustom?: string;
   color?: string;
@@ -147,7 +149,10 @@ export function charWithAu(c: Character, auKey?: string | null): Character {
     ...(p.name !== undefined ? { name: p.name } : {}),
     ...(p.altName !== undefined ? { altName: p.altName } : {}),
     ...(p.sub !== undefined ? { sub: p.sub } : {}),
-    ...(p.quote !== undefined ? { quote: p.quote } : {}),
+    // AU의 한마디와 성격 키워드는 ORIGINAL을 물려받지 않는다.
+    // 구형 AU 데이터에 필드가 없어도 현재 선택한 AU의 값만 보여 주어 프로필이 섞이지 않게 한다.
+    quote: p.quote,
+    keywords: p.keywords ?? [],
     ...(p.workStatus !== undefined ? {
       workStatus: p.workStatus ?? undefined,
       workStatusCustom: p.workStatus ? p.workStatusCustom : undefined,

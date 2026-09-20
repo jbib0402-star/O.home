@@ -54,6 +54,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [altName, setAltName] = useState(initial?.altName ?? '');
   const [sub, setSub] = useState(initial?.sub ?? '');
   const [quote, setQuote] = useState(initial?.quote ?? '');
+  const [keywords, setKeywords] = useState((initial?.keywords ?? []).join(', '));
   const [workStatus, setWorkStatus] = useState<CharacterWorkStatus | ''>(initial?.workStatus ?? '');
   const [workStatusCustom, setWorkStatusCustom] = useState(initial?.workStatusCustom ?? '');
   const [color, setColor] = useState(initial?.color ?? '#5d636d');
@@ -63,7 +64,12 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
   const [nameSize, setNameSize] = useState(initial?.nameSize ?? 38);   // 상세 큰 이름 크기 (v2.0)
   const [bodyFontId, setBodyFontId] = useState(initial?.bodyFontId ?? 'default');
   const [specs, setSpecs] = useState<SpecRow[]>(
-    (initial?.specs ?? [{ label: '성별', value: '' }, { label: '키', value: '' }]).map(s => ({ ...s, id: newId() })));
+    (initial?.specs ?? [
+      { label: '나이', value: '' }, { label: '성별', value: '' },
+      { label: '키', value: '' }, { label: '직업', value: '' },
+      { label: '생일', value: '' }, { label: '좋아하는 것', value: '' },
+      { label: '싫어하는 것', value: '' }, { label: '성격', value: '' },
+    ]).map(s => ({ ...s, id: newId() })));
   const [colors, setColors] = useState<ColorRow[]>((initial?.colors ?? []).map(c => ({ ...c, id: newId() })));
   const [colorTipMode, setColorTipMode] = useState<'hex' | 'both' | 'label'>(initial?.colorTipMode ?? 'hex');
   // 색 점 테두리 (v2.0 사용자 요청) — 없음 / 1px(색 지정). 미지정이면 지금까지의 옅은 테두리
@@ -148,6 +154,7 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
       altName: altName.trim() || undefined,
       sub: sub.trim(),
       quote: quote.trim() || undefined,
+      keywords: keywords.split(',').map(x => x.trim().replace(/^#/, '')).filter(Boolean),
       workStatus: workStatus || undefined,
       workStatusCustom: workStatus === 'custom' ? (workStatusCustom.trim() || undefined) : undefined,
       color,
@@ -433,6 +440,8 @@ export function CharEditForm({ initial, onSave, onCancel, auMode, auLabel, auLab
             )}
             <KInput placeholder="영문/한자 이름 (선택)" value={altName} onChange={e => setAltName(e.target.value)} />
             <KInput placeholder="한 줄 소개 (선택)" value={sub} onChange={e => setSub(e.target.value)} />
+            <KInput placeholder="성격 키워드 — 쉼표로 구분 (예: 느긋함, 책임감)" value={keywords}
+              onChange={e => setKeywords(e.target.value)} />
             <KInput placeholder="한마디 (선택)" value={quote} onChange={e => setQuote(e.target.value)} />
 
             <div className="char-status-setting">

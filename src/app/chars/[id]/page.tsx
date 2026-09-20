@@ -29,6 +29,9 @@ type CharAuChoice = {
   relName?: string;
 };
 
+const RELATION_CARD_TONES = ['mint', 'pink', 'sky', 'lilac'] as const;
+const RELATION_CARD_DECOS = ['✿', '♡', '✦', '⌁'] as const;
+
 /** 캐릭터 자체 AU 생성 직후의 독립 프로필. 이미지는 비워 ORIGINAL을 자동 상속하지 않는다. */
 function blankCharacterAu(label: string, base: Character): AuCharProfile {
   return {
@@ -434,22 +437,49 @@ function CharDetailInner() {
                 </>
               ) : tab === 'relations' ? (
                 <section className="profile-relations-section">
-                  <div className="profile-section-label">RELATIONSHIPS <span>관계</span></div>
+                  <header className="relation-section-head">
+                    <div className="profile-section-label">RELATIONSHIPS <span>관계</span></div>
+                    <p>소중한 인연들, 오래 곁에 남은 사람들</p>
+                    <div className="relation-section-doodle" aria-hidden="true"><i />✦<i />♡<i /></div>
+                  </header>
                   {relatedRels.length > 0 && (
                     <div className="profile-relation-group">
                       <div className="profile-relation-group-label"><b>AUTO</b><span>자관에서 연결됨</span></div>
                       <div className="profile-relation-list">
-                      {relatedRels.map(r => {
+                      {relatedRels.map((r, index) => {
                         const [selectedRelId, selectedAuId] = auKey && !isCharacterAuKey(auKey)
                           ? auKey.split(':') : ['', ''];
                         const href = selectedRelId === r.id && selectedAuId
                           ? `/rels/${r.id}?au=${encodeURIComponent(selectedAuId)}` : `/rels/${r.id}`;
+                        const relAuKey = selectedRelId === r.id && selectedAuId ? `${r.id}:${selectedAuId}` : null;
+                        const linkedCharacters = r.members
+                          .filter(m => m.charId !== ch.id)
+                          .map(m => chars.find(c => c.id === m.charId))
+                          .filter((c): c is Character => !!c)
+                          .map(c => charWithAu(c, relAuKey));
+                        const faceCharacter = linkedCharacters[0];
+                        const linkedNames = linkedCharacters.map(c => c.name).filter(Boolean).join(' · ');
+                        const tone = RELATION_CARD_TONES[index % RELATION_CARD_TONES.length];
                         return (
-                          <button type="button" key={r.id} className="profile-relation-card"
+                          <button type="button" key={r.id}
+                            className={`relation-card relation-card--${tone} relation-card--link`}
                             onClick={() => router.push(href)}>
-                            <span><small>{r.kind === 'multi' ? 'MULTI' : 'PAIR'}</small><b>{r.name}</b>
-                              {r.catchphrase && <em>{r.catchphrase}</em>}</span>
-                            <i aria-hidden="true">→</i>
+                            <span className="relation-thumb-frame">
+                              <span className="relation-thumb-image">
+                                <CroppedBlobImg fileRef={faceCharacter ? charThumbRef(faceCharacter) : undefined}
+                                  crop={faceCharacter?.thumbCrop} label={(linkedNames || r.name).slice(0, 1)}
+                                  alt={linkedNames ? `${linkedNames} 두상` : `${r.name} 관계 이미지`} />
+                              </span>
+                            </span>
+                            <span className="relation-card-copy">
+                              <span className="relation-pill">{r.kind === 'multi' ? '여러 사람의 관계' : '소중한 관계'}</span>
+                              <b>{r.name}</b>
+                              {linkedNames && <small>{linkedNames}</small>}
+                              {r.catchphrase && <p>{r.catchphrase}</p>}
+                            </span>
+                            <span className="relation-card-deco" aria-hidden="true">
+                              <i>{RELATION_CARD_DECOS[index % RELATION_CARD_DECOS.length]}</i><em>view</em><b>→</b>
+                            </span>
                           </button>
                         );
                       })}
@@ -460,18 +490,26 @@ function CharDetailInner() {
                     <div className="profile-relation-group profile-manual-relation-group">
                       <div className="profile-relation-group-label"><b>PROFILE</b><span>직접 추가 관계</span></div>
                       <div className="profile-manual-relation-list">
-                        {(eff.manualRelations ?? []).map(r => (
-                          <article className="profile-manual-relation-card" key={r.id}>
-                            <div className="profile-manual-relation-face">
-                              <CroppedBlobImg fileRef={r.faceId} crop={r.faceCrop} label={r.name.slice(0, 1)} alt={`${r.name} 두상`} />
+                        {(eff.manualRelations ?? []).map((r, index) => {
+                          const colorIndex = relatedRels.length + index;
+                          const tone = RELATION_CARD_TONES[colorIndex % RELATION_CARD_TONES.length];
+                          return (
+                          <article className={`relation-card relation-card--${tone}`} key={r.id}>
+                            <div className="relation-thumb-frame">
+                              <div className="relation-thumb-image">
+                                <CroppedBlobImg fileRef={r.faceId} crop={r.faceCrop} label={r.name.slice(0, 1)} alt={`${r.name} 두상`} />
+                              </div>
                             </div>
-                            <div className="profile-manual-relation-copy">
-                              <small>{r.relation}</small>
+                            <div className="relation-card-copy">
+                              <span className="relation-pill">{r.relation}</span>
                               <b>{r.name}</b>
                               {r.description && <p>{r.description}</p>}
                             </div>
+                            <div className="relation-card-deco" aria-hidden="true">
+                              <i>{RELATION_CARD_DECOS[colorIndex % RELATION_CARD_DECOS.length]}</i><em>dear</em><b>·</b>
+                            </div>
                           </article>
-                        ))}
+                        );})}
                       </div>
                     </div>
                   )}

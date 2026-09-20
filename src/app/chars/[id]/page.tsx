@@ -273,66 +273,18 @@ function CharDetailInner() {
           ← BACK
         </button>
 
-        {/* 좁은 좌측 레일 — AU와 INFO 탭은 기존 기능을 그대로 유지한다. */}
-        <nav className="side-icons profile-editorial-rail" aria-label="캐릭터 프로필 탐색">
-          <div className="side-icon-group">
-            <span className="side-icon-label">AU</span>
-            <button className={'side-au-button ' + (auKey === null ? 'on' : '')}
-              data-tip="ORIGINAL" aria-label="ORIGINAL 프로필" onClick={() => setAuKey(null)}>
-              <span className={'side-au-face ph ' + ch.thumbClass}>
-                {charThumbRef(ch)
-                  ? <CroppedBlobImg fileRef={charThumbRef(ch)} crop={ch.thumbCrop} ph={ch.thumbClass} />
-                  : <b>O</b>}
-              </span>
-            </button>
-            {charAus.map(a => {
-              const av = charWithAu(ch, a.key);
-              const faceRef = av.thumbId ?? (a.source === 'relation' ? (av.outfits?.[0]?.imgId ?? av.arts?.[0]) : undefined);
-              const tip = a.source === 'relation' ? a.label + ' · ' + (a.relName ?? '자관') + ' AU' : a.label;
-              return (
-                <button key={a.key} className={'side-au-button ' + (auKey === a.key ? 'on' : '')}
-                  data-tip={tip} aria-label={a.label + ' 프로필'} onClick={() => setAuKey(a.key)}>
-                  <span className={'side-au-face ph ' + ch.thumbClass}>
-                    {faceRef
-                      ? <CroppedBlobImg fileRef={faceRef} crop={av.thumbCrop} ph={ch.thumbClass} />
-                      : <b>{a.label.trim().charAt(0) || 'A'}</b>}
-                  </span>
-                </button>
-              );
-            })}
-            {canEdit && (
-              <button className="side-au-add" data-tip="새 AU 추가" aria-label="새 AU 추가"
-                onClick={() => setAuCreateOpen(true)}>＋</button>
-            )}
-          </div>
-
-          {auRegistered && (
-            <>
-              <div className="side-icon-divider" aria-hidden="true" />
-              <div className="side-icon-group">
-                <span className="side-icon-label">INFO</span>
-                <button className={tab === 'basic' ? 'on' : ''} data-tip="기본 정보" aria-label="기본 정보"
-                  onClick={() => pickTab('basic')}>☰</button>
-                {visibleTabs.map(t => (
-                  <button key={t.id} className={(tab === t.id ? 'on ' : '') + (t.visibility === 'private' ? 'side-tab-private' : '')}
-                    data-tip={(t.title || '추가 프로필') + (t.visibility === 'private' ? ' · 비공개' : '')}
-                    aria-label={(t.title || '추가 프로필') + (t.visibility === 'private' ? ' 비공개' : '')}
-                    onClick={() => pickTab(t.id)}>{t.icon}{t.visibility === 'private' && <span aria-hidden="true">🔒</span>}</button>
-                ))}
-              </div>
-            </>
-          )}
-        </nav>
-
         {auKey && !auRegistered ? (
           <div className="panel profile-au-empty">
             <div className="profile-au-empty-title">{charAus.find(a => a.key === auKey)?.label ?? 'AU'}</div>
             <p>이 AU의 「{ch.name}」이 아직 등록되지 않았습니다 — 등록하면 이 캐릭터의 AU 프로필로 연동됩니다</p>
-            {canEdit && <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>}
+            <div className="profile-au-empty-actions">
+              <button className="btn btn-ghost" onClick={() => setAuKey(null)}>ORIGINAL</button>
+              {canEdit && <button className="btn btn-dark" onClick={() => router.push(editHref)}>＋ AU 캐릭터 등록</button>}
+            </div>
           </div>
         ) : (
           <>
-            {/* 왼쪽 큰 전신 화보 영역 — 페이지 높이를 채우고 정보가 길어도 화면에 남는다. */}
+            {/* 가운데 큰 전신 화보 영역 — 페이지 높이를 채우고 정보가 길어도 화면에 남는다. */}
             <section className="profile-editorial-stage" aria-label={eff.name + ' 전신'}>
               <div className="profile-stage-kicker">
                 <span>{auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'ORIGINAL'}</span>
@@ -373,7 +325,7 @@ function CharDetailInner() {
               )}
             </section>
 
-            {/* 오른쪽은 카드 테두리를 없앤 편집 화보형 정보 영역. 동적 스펙/탭 데이터는 그대로 사용한다. */}
+            {/* 왼쪽 프로필 정보 — 기본 정보 아래 소개 본문은 기타사항으로 이어진다. */}
             <section className="profile-editorial-info" ref={infoRef} style={{ fontFamily: familyOf(eff.bodyFontId) }}>
               <div className="profile-info-head">
                 <div className="profile-kicker">
@@ -417,6 +369,21 @@ function CharDetailInner() {
                 </div>
               )}
 
+              {visibleTabs.length > 0 && (
+                <nav className="profile-info-tabs" aria-label="프로필 정보 탭">
+                  <button type="button" className={tab === 'basic' ? 'on' : ''}
+                    aria-pressed={tab === 'basic'} onClick={() => pickTab('basic')}>기본 정보</button>
+                  {visibleTabs.map(t => (
+                    <button type="button" key={t.id}
+                      className={(tab === t.id ? 'on ' : '') + (t.visibility === 'private' ? 'is-private' : '')}
+                      aria-pressed={tab === t.id} onClick={() => pickTab(t.id)}>
+                      <span aria-hidden="true">{t.icon}</span>{t.title || '추가 프로필'}
+                      {t.visibility === 'private' && <i aria-label="비공개">🔒</i>}
+                    </button>
+                  ))}
+                </nav>
+              )}
+
               {tab === 'basic' ? (
                 <>
                   <dl className="spec profile-editorial-spec">
@@ -426,7 +393,7 @@ function CharDetailInner() {
                   </dl>
                   {basicHtml && (
                     <section className="profile-copy">
-                      <div className="profile-section-label">INTRODUCTION</div>
+                      <div className="profile-section-label">OTHER NOTES <span>기타사항</span></div>
                       <div className="prose" dangerouslySetInnerHTML={{ __html: basicHtml }} />
                     </section>
                   )}
@@ -438,6 +405,54 @@ function CharDetailInner() {
                 </section>
               )}
             </section>
+
+            {/* 오른쪽 AU 셸프 — 레퍼런스의 STANDING 선택 영역을 AU 카드로 재구성한다. */}
+            <aside className="profile-au-shelf" aria-label="AU 프로필 선택">
+              <div className="profile-au-shelf-head">
+                <div>
+                  <span>ALTERNATE UNIVERSE</span>
+                  <strong>AU</strong>
+                </div>
+                <small>{String(charAus.length + 1).padStart(2, '0')}</small>
+              </div>
+              <div className="profile-au-cards">
+                <button type="button" className={'profile-au-card ' + (auKey === null ? 'on' : '')}
+                  aria-pressed={auKey === null} onClick={() => setAuKey(null)}>
+                  <span className={'profile-au-card-art ph ' + ch.thumbClass}>
+                    {charThumbRef(ch)
+                      ? <CroppedBlobImg fileRef={charThumbRef(ch)} crop={ch.thumbCrop} ph={ch.thumbClass} />
+                      : <b>O</b>}
+                  </span>
+                  <span className="profile-au-card-copy"><b>ORIGINAL</b><small>기본 프로필</small></span>
+                  <i aria-hidden="true">01</i>
+                </button>
+                {charAus.map((a, index) => {
+                  const av = charWithAu(ch, a.key);
+                  const faceRef = av.thumbId ?? (a.source === 'relation' ? (av.outfits?.[0]?.imgId ?? av.arts?.[0]) : undefined);
+                  return (
+                    <button type="button" key={a.key} className={'profile-au-card ' + (auKey === a.key ? 'on' : '')}
+                      aria-pressed={auKey === a.key} onClick={() => setAuKey(a.key)}>
+                      <span className={'profile-au-card-art ph ' + ch.thumbClass}>
+                        {faceRef
+                          ? <CroppedBlobImg fileRef={faceRef} crop={av.thumbCrop} ph={ch.thumbClass} />
+                          : <b>{a.label.trim().charAt(0) || 'A'}</b>}
+                      </span>
+                      <span className="profile-au-card-copy">
+                        <b>{a.label}</b>
+                        <small>{a.source === 'relation' ? (a.relName ?? '자관') + ' AU' : '캐릭터 AU'}</small>
+                      </span>
+                      <i aria-hidden="true">{String(index + 2).padStart(2, '0')}</i>
+                    </button>
+                  );
+                })}
+                {canEdit && (
+                  <button type="button" className="profile-au-card profile-au-card-add"
+                    aria-label="새 AU 추가" onClick={() => setAuCreateOpen(true)}>
+                    <span>＋</span><b>NEW AU</b>
+                  </button>
+                )}
+              </div>
+            </aside>
           </>
         )}
       </div>

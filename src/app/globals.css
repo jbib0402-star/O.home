@@ -2081,11 +2081,11 @@ body.edit-on .main-grid.gridlines .wgt{outline-offset:0}
 body:has(.page-char-detail) .topbar{display:none}
 body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .page-char-detail{width:100%;max-width:none!important;min-height:100vh;padding:0 0 76px!important;position:relative;overflow:visible}
-.profile-editorial{position:relative;display:grid;grid-template-columns:68px minmax(0,1.15fr) minmax(420px,.85fr);min-height:100vh;isolation:isolate;background:color-mix(in srgb,var(--bg-g1) 64%,var(--panel-solid) 36%)}
+.profile-editorial{position:relative;display:grid;grid-template-columns:minmax(390px,.9fr) minmax(460px,1.15fr) minmax(210px,.46fr);min-height:100vh;isolation:isolate;background:color-mix(in srgb,var(--bg-g1) 64%,var(--panel-solid) 36%)}
 .profile-editorial::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;background:
   radial-gradient(900px 620px at 34% 28%,color-mix(in srgb,var(--accent) 11%,transparent),transparent 66%),
   linear-gradient(145deg,color-mix(in srgb,var(--bg-g1) 72%,transparent),color-mix(in srgb,var(--bg-g2) 54%,transparent))}
-.profile-back{position:fixed;left:92px;top:28px;z-index:45;padding:8px 11px;border-radius:999px;font-family:var(--serif);font-size:11px;letter-spacing:.06em;color:var(--sub);background:color-mix(in srgb,var(--panel-solid) 72%,transparent);border:1px solid color-mix(in srgb,var(--line) 82%,transparent);backdrop-filter:blur(10px);transition:.18s}
+.profile-back{position:fixed;left:22px;top:22px;z-index:45;padding:8px 11px;border-radius:999px;font-family:var(--serif);font-size:11px;letter-spacing:.06em;color:var(--sub);background:color-mix(in srgb,var(--panel-solid) 72%,transparent);border:1px solid color-mix(in srgb,var(--line) 82%,transparent);backdrop-filter:blur(10px);transition:.18s}
 .profile-back:hover{color:var(--ink);border-color:color-mix(in srgb,var(--accent) 45%,var(--line));transform:translateX(-2px)}
 
 .profile-editorial-rail{grid-column:1;grid-row:1;align-self:start;position:sticky!important;top:0!important;height:100vh;padding:22px 0!important;z-index:35;background:color-mix(in srgb,var(--panel-solid) 84%,var(--bg-g2) 16%);border-right:1px solid color-mix(in srgb,var(--line) 85%,transparent);backdrop-filter:blur(14px);overflow-y:auto}
@@ -2094,7 +2094,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-rail button{width:42px;height:42px;border-radius:10px}
 .profile-editorial-rail .side-au-face{inset:3px;border-radius:8px}
 
-.profile-editorial-stage{grid-column:2;grid-row:1;position:sticky;top:0;align-self:start;height:100vh;min-height:620px;overflow:hidden;isolation:isolate;border-right:1px solid color-mix(in srgb,var(--line) 82%,transparent);
+.profile-editorial-stage{grid-column:2;grid-row:1;position:sticky;top:0;align-self:start;height:100vh;min-height:620px;overflow:hidden;isolation:isolate;border-left:1px solid color-mix(in srgb,var(--line) 82%,transparent);border-right:1px solid color-mix(in srgb,var(--line) 82%,transparent);
   background:
     radial-gradient(circle at 58% 34%,color-mix(in srgb,var(--panel-solid) 68%,transparent),transparent 32%),
     radial-gradient(circle at 44% 56%,color-mix(in srgb,var(--accent) 10%,transparent),transparent 48%),
@@ -2119,7 +2119,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-outfit-switch button.on{background:transparent;color:var(--ink);font-weight:800}
 .profile-outfit-switch button.on::after{content:"◆";color:var(--accent)}
 
-.profile-editorial-info{grid-column:3;grid-row:1;min-width:0;min-height:100vh;padding:clamp(76px,8vh,118px) clamp(34px,4.2vw,76px) 100px;background:color-mix(in srgb,var(--panel-solid) 68%,transparent);backdrop-filter:blur(14px);font-family:var(--sans)}
+.profile-editorial-info{grid-column:1;grid-row:1;min-width:0;min-height:100vh;padding:clamp(82px,9vh,128px) clamp(34px,4vw,72px) 100px;background:color-mix(in srgb,var(--panel-solid) 78%,transparent);backdrop-filter:blur(14px);font-family:var(--sans)}
 .profile-editorial-info .profile-info-head{margin-bottom:18px;padding-bottom:0}
 .profile-editorial-info .profile-name{font-size:clamp(38px,var(--character-name-size,48px),72px);letter-spacing:.08em;line-height:1.04}
 .profile-editorial-info .profile-alt-name{margin-top:9px;color:var(--faint);font-family:var(--serif);font-size:calc(11px*var(--fs,1));letter-spacing:.13em;line-height:1.35}
@@ -2130,14 +2130,36 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-info .profile-editorial-spec .spec-item{min-width:0}
 .profile-editorial-info .profile-copy{padding-top:34px}
 .profile-editorial-info .profile-section-label{margin-bottom:16px;color:var(--accent)}
+.profile-editorial-info .profile-section-label span{margin-left:7px;color:var(--faint);font-size:.88em;letter-spacing:.08em}
 .profile-editorial-info .prose{max-width:70ch;line-height:1.95}
+.profile-info-tabs{display:flex;gap:7px;margin-top:26px;padding-bottom:12px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:thin}
+.profile-info-tabs button{flex:0 0 auto;display:flex;align-items:center;gap:6px;padding:7px 11px;border-radius:999px;color:var(--faint);font-size:calc(11px*var(--fs,1));border:1px solid transparent;transition:.16s}
+.profile-info-tabs button:hover{color:var(--ink);background:color-mix(in srgb,var(--accent) 7%,transparent)}
+.profile-info-tabs button.on{color:var(--ink);background:color-mix(in srgb,var(--panel-solid) 84%,transparent);border-color:color-mix(in srgb,var(--accent) 32%,var(--line));box-shadow:0 4px 18px color-mix(in srgb,var(--accent) 8%,transparent)}
+.profile-info-tabs button i{font-size:9px;font-style:normal}
 .profile-tab-section{padding-top:26px}
 .profile-tab-section>.sub{margin-bottom:20px}
 .profile-tab-section .profile-tab-copy{padding-top:24px}
 
-.profile-editorial .profile-au-empty{grid-column:2/-1;grid-row:1;align-self:center;justify-self:center;width:min(620px,calc(100% - 64px));padding:58px;text-align:center;background:color-mix(in srgb,var(--panel-solid) 86%,transparent);box-shadow:none}
+.profile-editorial .profile-au-empty{grid-column:1/-1;grid-row:1;align-self:center;justify-self:center;width:min(620px,calc(100% - 64px));padding:58px;text-align:center;background:color-mix(in srgb,var(--panel-solid) 86%,transparent);box-shadow:none}
 .profile-au-empty-title{font-family:var(--serif);font-size:28px;letter-spacing:.14em;margin-bottom:9px}
 .profile-editorial .profile-au-empty p{font-size:13px;color:var(--faint);line-height:1.7;margin-bottom:18px}
+.profile-au-empty-actions{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap}
+
+/* 레퍼런스형 AU 카드 셸프 — STANDING 대신 캐릭터의 ORIGINAL/AU 프로필을 고른다. */
+.profile-au-shelf{grid-column:3;grid-row:1;position:sticky;top:0;align-self:start;height:100vh;min-width:0;padding:clamp(72px,8vh,104px) 18px 28px;background:color-mix(in srgb,var(--bg-g2) 72%,var(--panel-solid) 28%);overflow:hidden}
+.profile-au-shelf::before{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(145deg,transparent 0 46%,color-mix(in srgb,var(--accent) 8%,transparent) 46.2% 62%,transparent 62.2%)}
+.profile-au-shelf-head{position:relative;display:flex;align-items:end;justify-content:space-between;gap:12px;padding:0 4px 15px;border-bottom:1px solid color-mix(in srgb,var(--accent) 28%,var(--line))}
+.profile-au-shelf-head>div{min-width:0}.profile-au-shelf-head span{display:block;color:var(--faint);font-size:8px;letter-spacing:.16em;white-space:nowrap}.profile-au-shelf-head strong{display:block;margin-top:3px;font-family:var(--serif);font-size:28px;font-weight:600;letter-spacing:.12em;line-height:1}.profile-au-shelf-head small{color:var(--accent);font-family:var(--serif);font-size:12px}
+.profile-au-cards{position:relative;display:flex;flex-direction:column;gap:9px;height:calc(100% - 52px);padding:16px 2px 8px;overflow-y:auto;scrollbar-width:thin}
+.profile-au-card{position:relative;display:grid;grid-template-columns:58px minmax(0,1fr) auto;align-items:center;gap:10px;width:100%;min-height:76px;padding:8px;border-radius:12px;text-align:left;color:var(--sub);background:color-mix(in srgb,var(--panel-solid) 58%,transparent);border:1px solid color-mix(in srgb,var(--line) 88%,transparent);box-shadow:0 8px 24px color-mix(in srgb,var(--ink) 4%,transparent);transition:.18s}
+.profile-au-card:hover{transform:translateY(-2px);color:var(--ink);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
+.profile-au-card.on{color:var(--ink);background:color-mix(in srgb,var(--panel-solid) 90%,transparent);border-color:color-mix(in srgb,var(--accent) 65%,var(--line));box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 13%,transparent)}
+.profile-au-card.on::after{content:"";position:absolute;left:-3px;top:14px;bottom:14px;width:3px;border-radius:99px;background:var(--accent)}
+.profile-au-card-art{position:relative;width:58px;aspect-ratio:3/4;border-radius:8px;overflow:hidden;display:grid;place-items:center;font-family:var(--serif);color:var(--faint);background:var(--crop-bg)}
+.profile-au-card-art>div,.profile-au-card-art img{width:100%;height:100%}
+.profile-au-card-copy{min-width:0}.profile-au-card-copy b{display:block;overflow:hidden;text-overflow:ellipsis;font-family:var(--serif);font-size:12px;letter-spacing:.06em;white-space:nowrap}.profile-au-card-copy small{display:block;margin-top:4px;overflow:hidden;text-overflow:ellipsis;color:var(--faint);font-size:9px;white-space:nowrap}.profile-au-card>i{align-self:start;color:var(--faint);font-family:var(--serif);font-size:9px;font-style:normal}
+.profile-au-card-add{display:flex;align-items:center;justify-content:center;gap:7px;min-height:52px;border-style:dashed;background:transparent;color:var(--faint);text-align:center}.profile-au-card-add span{font-size:18px;font-weight:300}.profile-au-card-add b{font-size:9px;letter-spacing:.14em}
 
 /* 캐릭터 편집 — 의상별 전신 행 */
 .char-outfit-edit-row{display:grid;grid-template-columns:auto 62px minmax(120px,1fr) auto auto;align-items:center;gap:9px;width:100%;padding:5px 0}
@@ -2145,7 +2167,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .char-outfit-edit-preview>div,.char-outfit-edit-preview img{width:100%;height:100%}
 
 /* 중간 화면 — 레일을 상단 두 줄 내비로 바꾸고 전신/정보를 세로로 쌓는다. */
-@media(max-width:960px){
+@media(max-width:1100px){
   body:has(.page-char-detail) .topbar{display:none}
   .profile-editorial{grid-template-columns:1fr;min-height:0}
   .profile-back{left:auto;right:12px;top:11px;background:color-mix(in srgb,var(--panel-solid) 90%,transparent)}
@@ -2154,10 +2176,12 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-editorial-rail .side-icon-label{flex:0 0 38px;text-align:center}
   .profile-editorial-rail .side-icon-divider{width:100%;height:1px;margin:0}
   .profile-editorial-rail button{flex:0 0 40px;width:40px;height:40px}
-  .profile-editorial-stage{grid-column:1;grid-row:2;position:relative;top:auto;height:min(78vh,760px);min-height:600px;border-right:0;border-bottom:1px solid var(--line)}
+  .profile-editorial-stage{grid-column:1;grid-row:1;position:relative;top:auto;height:min(78vh,760px);min-height:600px;border:0;border-bottom:1px solid var(--line)}
   .profile-editorial-art-frame{inset:60px 5% 86px}
-  .profile-editorial-info{grid-column:1;grid-row:3;min-height:0;padding:48px clamp(24px,6vw,64px) 90px}
-  .profile-editorial .profile-au-empty{grid-column:1;grid-row:2;margin:58px auto}
+  .profile-editorial-info{grid-column:1;grid-row:2;min-height:0;padding:48px clamp(24px,6vw,64px) 90px}
+  .profile-au-shelf{grid-column:1;grid-row:3;position:relative;top:auto;height:auto;padding:38px clamp(24px,6vw,64px) 54px;border-top:1px solid var(--line);overflow:visible}
+  .profile-au-cards{height:auto;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));overflow:visible}
+  .profile-editorial .profile-au-empty{grid-column:1;grid-row:1;margin:80px auto}
 }
 @media(max-width:620px){
   .page-char-detail{padding-bottom:64px!important}
@@ -2176,6 +2200,10 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
   .profile-editorial-info .profile-info-actions{width:100%;justify-content:flex-start}
   .profile-editorial-info .profile-name{font-size:clamp(34px,12vw,var(--character-name-size,48px))}
   .profile-editorial-info .profile-editorial-spec{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 14px}
+  .profile-au-shelf{padding:32px 16px 42px}
+  .profile-au-cards{display:flex;flex-direction:row;gap:10px;padding-bottom:8px;overflow-x:auto;scroll-snap-type:x proximity}
+  .profile-au-card{flex:0 0 198px;scroll-snap-align:start}
+  .profile-au-card-add{flex-basis:142px}
   .profile-editorial .profile-au-empty{width:calc(100% - 28px);padding:38px 20px;margin:36px auto}
   .char-outfit-edit-row{grid-template-columns:auto 56px minmax(0,1fr) auto;gap:7px}
   .char-outfit-edit-preview{width:56px}

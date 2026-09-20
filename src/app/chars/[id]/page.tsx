@@ -439,7 +439,6 @@ function CharDetailInner() {
                 <section className="profile-relations-section">
                   <header className="relation-section-head">
                     <div className="profile-section-label">RELATIONSHIPS <span>관계</span></div>
-                    <p>소중한 인연들, 오래 곁에 남은 사람들</p>
                     <div className="relation-section-doodle" aria-hidden="true"><i />✦<i />♡<i /></div>
                   </header>
                   {relatedRels.length > 0 && (

@@ -365,8 +365,8 @@ function CharDetailInner() {
                 '--character-name-size': (eff.nameSize ?? 38) + 'px',
                 fontWeight: 500,
               } as React.CSSProperties}>{eff.name}</div>
-              {eff.quote && <div className="profile-quote">&quot; {eff.quote} &quot;</div>}
               {eff.altName && <div className="profile-alt-name">{eff.altName}</div>}
+              {eff.quote && <div className="profile-quote">&quot; {eff.quote} &quot;</div>}
 
               {!!eff.keywords?.length && (
                 <div className="profile-keywords" aria-label="성격 키워드">

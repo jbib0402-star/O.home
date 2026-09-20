@@ -2132,7 +2132,7 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-info .profile-palette{margin-top:18px}
 .profile-basic-card{margin-top:28px;padding:18px 18px 8px;border:1px solid color-mix(in srgb,var(--accent) 18%,var(--line));border-radius:12px;background:color-mix(in srgb,var(--panel-solid) 88%,transparent);box-shadow:0 10px 30px color-mix(in srgb,var(--ink) 3%,transparent)}
 .profile-basic-card-head{display:flex;align-items:baseline;gap:8px;padding:0 2px 12px;border-bottom:1px solid var(--line)}
-.profile-basic-card-head strong{font-family:var(--serif);font-size:14px;letter-spacing:.1em}.profile-basic-card-head span{color:var(--faint);font-size:10px}
+.profile-basic-card-head strong{font-family:var(--serif);font-size:15px;letter-spacing:.1em}.profile-basic-card-head span{color:var(--faint);font-size:11px}
 .profile-editorial-info .profile-editorial-spec{grid-template-columns:repeat(2,minmax(0,1fr));gap:0;margin:0;padding:0;border:0}
 .profile-editorial-info .profile-editorial-spec .spec-item{min-width:0}
 .profile-editorial-info .profile-editorial-spec .spec-item{display:grid;grid-template-columns:minmax(66px,.42fr) minmax(0,1fr);align-items:start;gap:9px;padding:12px 4px;border-bottom:1px solid var(--line)}
@@ -2140,8 +2140,8 @@ body:has(.page-char-detail) #appMain{scrollbar-gutter:auto}
 .profile-editorial-info .profile-editorial-spec .spec-item:nth-child(odd):not(.is-wide){padding-right:14px}
 .profile-editorial-info .profile-editorial-spec .spec-item:nth-child(even):not(.is-wide){padding-left:14px;border-left:1px solid var(--line)}
 .profile-editorial-info .profile-editorial-spec .spec-item.is-wide{grid-column:1/-1;grid-template-columns:minmax(86px,.2fr) minmax(0,1fr)}
-.profile-editorial-info .profile-editorial-spec dt{margin:0;color:var(--faint);font-size:calc(10px*var(--fs,1));letter-spacing:0;text-transform:none;line-height:1.65}
-.profile-editorial-info .profile-editorial-spec dd{font-size:calc(12px*var(--fs,1));font-weight:600;line-height:1.65}
+.profile-editorial-info .profile-editorial-spec dt{margin:0;color:var(--faint);font-size:calc(11px*var(--fs,1));letter-spacing:0;text-transform:none;line-height:1.65}
+.profile-editorial-info .profile-editorial-spec dd{font-size:calc(13px*var(--fs,1));font-weight:600;line-height:1.65}
 .profile-editorial-info .profile-copy{padding-top:34px}
 .profile-editorial-info .profile-section-label{margin-bottom:16px;color:var(--accent)}
 .profile-editorial-info .profile-section-label span{margin-left:7px;color:var(--faint);font-size:.88em;letter-spacing:.08em}

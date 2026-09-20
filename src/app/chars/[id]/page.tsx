@@ -17,6 +17,7 @@ import { useTheme } from '@/lib/ThemeProvider';
 import { createPortal } from 'react-dom';
 import { useBlobUrl } from '@/lib/blobStore';
 import { CroppedBlobImg, CropEditor, type CropValue } from '@/components/ui/CropEditor';
+import { normalizeInternalLink } from '@/lib/link';
 
 import { PageTitle } from '@/components/ui/PageText';
 import { ConfirmModal, Modal } from '@/components/ui/Modal';
@@ -40,6 +41,10 @@ function blankCharacterAu(label: string, base: Character): AuCharProfile {
     quote: '',
     keywords: [],
     manualRelations: [],
+    imageSlides: [],
+    imageFit: 'cover',
+    imageInterval: 5,
+    imageRounded: true,
     workStatus: null,
     workStatusCustom: undefined,
     basicHtml: '',
@@ -72,6 +77,66 @@ function FullArtBlobImg({ fileRef, ph, label, alt }: {
     <div className="profile-art-contain">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img src={url} alt={alt ?? ''} draggable={false} />
+    </div>
+  );
+}
+
+function ProfileImageFrame({ fileRef, crop, fit, alt }: {
+  fileRef: string; crop?: CropValue; fit: 'cover' | 'contain'; alt: string;
+}) {
+  const url = useBlobUrl(fit === 'contain' ? fileRef : undefined);
+  if (fit === 'cover') return <CroppedBlobImg fileRef={fileRef} crop={crop} ph="" alt={alt} />;
+  if (!url) return <div className="ph" style={{ position: 'absolute', inset: 0 }} />;
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img className="profile-image-contain" src={url} alt={alt} draggable={false} />
+  );
+}
+
+function ProfileImageGallery({ character }: { character: Character }) {
+  const router = useRouter();
+  const slides = character.imageSlides ?? [];
+  const fit = character.imageFit ?? 'cover';
+  const rounded = character.imageRounded ?? true;
+  const [index, setIndex] = useState(0);
+  const current = slides[Math.min(index, Math.max(0, slides.length - 1))];
+
+  useEffect(() => {
+    if (index >= slides.length) setIndex(0);
+  }, [index, slides.length]);
+  useEffect(() => {
+    if (slides.length < 2) return;
+    const timer = window.setInterval(
+      () => setIndex(i => (i + 1) % slides.length),
+      Math.max(2, character.imageInterval ?? 5) * 1000,
+    );
+    return () => window.clearInterval(timer);
+  }, [slides.length, character.imageInterval]);
+
+  const openLink = () => {
+    if (!current?.link) return;
+    const link = normalizeInternalLink(current.link);
+    if (/^https?:\/\//i.test(link)) window.open(link, '_blank', 'noopener,noreferrer');
+    else router.push(link);
+  };
+
+  if (!current) return <div className="profile-image-empty">등록된 이미지가 없습니다.</div>;
+  return (
+    <div className={'profile-image-widget ' + (rounded ? 'is-rounded' : '')}>
+      <button type="button" className="profile-image-stage" onClick={openLink}
+        disabled={!current.link} aria-label={current.link ? `${character.name} 이미지 링크 열기` : undefined}>
+        <ProfileImageFrame key={current.id} fileRef={current.imgId} crop={current.crop} fit={fit}
+          alt={`${character.name} 이미지 ${index + 1}`} />
+      </button>
+      {slides.length > 1 && (
+        <div className="profile-image-dots" aria-label="이미지 선택">
+          {slides.map((slide, i) => (
+            <button type="button" key={slide.id} className={i === index ? 'on' : ''}
+              aria-label={`${i + 1}번째 이미지`} aria-pressed={i === index} onClick={() => setIndex(i)} />
+          ))}
+        </div>
+      )}
+      <span className="profile-image-count">{String(index + 1).padStart(2, '0')} / {String(slides.length).padStart(2, '0')}</span>
     </div>
   );
 }
@@ -343,6 +408,7 @@ function CharDetailInner() {
                   {tab === 'basic'
                     ? (auKey ? (charAus.find(a => a.key === auKey)?.label ?? 'AU') : 'CHARACTER PROFILE')
                     : tab === 'relations' ? 'RELATIONSHIPS'
+                    : tab === 'images' ? 'IMAGE GALLERY'
                     : (curTab?.title?.trim() || 'PROFILE')}
                 </div>
                 <div className="profile-info-actions">
@@ -398,6 +464,12 @@ function CharDetailInner() {
                     aria-pressed={tab === 'relations'} onClick={() => pickTab('relations')}>
                     <span aria-hidden="true">↗</span>관계
                   </button>
+                  {((eff.imageSlides?.length ?? 0) > 0 || canEdit) && (
+                    <button type="button" className={tab === 'images' ? 'on' : ''}
+                      aria-pressed={tab === 'images'} onClick={() => pickTab('images')}>
+                      <span aria-hidden="true">▧</span>이미지
+                    </button>
+                  )}
                   {visibleTabs.map(t => (
                     <button type="button" key={t.id}
                       className={(tab === t.id ? 'on ' : '') + (t.visibility === 'private' ? 'is-private' : '')}
@@ -478,6 +550,11 @@ function CharDetailInner() {
                   {relatedRels.length === 0 && (eff.manualRelations ?? []).length === 0 && (
                     <div className="profile-relation-empty">등록된 관계가 없습니다.</div>
                   )}
+                </section>
+              ) : tab === 'images' ? (
+                <section className="profile-images-section">
+                  <div className="profile-section-label">IMAGE GALLERY <span>이미지</span></div>
+                  <ProfileImageGallery key={auKey ?? 'original'} character={eff} />
                 </section>
               ) : (
                 <section className="profile-tab-section">

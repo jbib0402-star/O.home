@@ -58,7 +58,9 @@ function CharEditInner() {
     ? (auProf
       ? charWithAu(ch, auKey)
       : {
-        ...ch, name: '', altName: '', sub: '', quote: '', keywords: [], manualRelations: [], workStatus: undefined, workStatusCustom: undefined,
+        ...ch, name: '', altName: '', sub: '', quote: '', keywords: [], manualRelations: [],
+        imageSlides: [], imageFit: 'cover' as const, imageInterval: 5, imageRounded: true,
+        workStatus: undefined, workStatusCustom: undefined,
         basicHtml: '', tabs: [], colors: [], colorTipMode: 'hex' as const,
         specs: [
           { label: '나이', value: '' }, { label: '성별', value: '' },
@@ -98,6 +100,8 @@ function CharEditInner() {
                   } : {}),
                   name: c.name, altName: c.altName, sub: c.sub, quote: c.quote, keywords: c.keywords,
                   manualRelations: c.manualRelations,
+                  imageSlides: c.imageSlides, imageFit: c.imageFit,
+                  imageInterval: c.imageInterval, imageRounded: c.imageRounded,
                   workStatus: c.workStatus ?? null, workStatusCustom: c.workStatusCustom,
                   color: c.color, themeMode: c.themeMode,
                   colors: c.colors, colorBd: c.colorBd, colorTipMode: c.colorTipMode,

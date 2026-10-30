@@ -133,6 +133,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signup = useCallback(async (id: string, password: string, nickname: string, code: string): Promise<Result> => {
     if (!id || !password || !nickname) return { ok: false, error: '아이디·비밀번호·닉네임을 모두 입력해 주세요.' };
     if (code !== inviteCode()) return { ok: false, error: '가입코드가 올바르지 않습니다.' };
+    if (server && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(id.trim())) {
+      return { ok: false, error: '로그인 아이디는 이메일 형식으로 입력해 주세요. 예: name@example.com' };
+    }
     if (server && be) {
       const r = await be.signUp(id.trim(), password, nickname.trim());
       if (!r.ok) return { ok: false, error: r.error ?? '가입에 실패했습니다.' };

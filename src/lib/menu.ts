@@ -48,7 +48,7 @@ export const DEFAULT_MENU: MenuItem[] = [
       { label: '갤러리', href: '/gallery' },
       { label: '로드비', href: '/loadb' },
       { label: '음악', href: '/music' },
-      { label: '24H 플레이리스트', href: '/quick-music', vis: 'admin' },
+      { label: '24H 플레이리스트', href: '/quick-music', vis: 'member' },
     ],
   },
   {

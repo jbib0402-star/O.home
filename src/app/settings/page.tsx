@@ -1706,12 +1706,6 @@ function DataPane() {
     URL.revokeObjectURL(u);
   };
 
-  const migSwitch = () => {
-    saveLocalConfig(migCfg());
-    toast('새 데이터베이스로 전환합니다 — 새로고침');
-    setTimeout(() => window.location.reload(), 700);
-  };
-
   const doExport = async (includeMembers: boolean) => {
     setBusy(true);
     try {

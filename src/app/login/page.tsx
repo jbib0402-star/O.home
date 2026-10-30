@@ -43,11 +43,11 @@ export default function LoginPage() {
 
   const doSignup = async () => {
     setSErr('');
-    // 서버 모드에서는 아이디가 곧 이메일 — 따로 받지 않고 그대로 쓴다
+    // 서버 모드도 사용자는 일반 아이디만 입력 — Supabase 내부 식별자는 백엔드에서 변환한다
     const r = await signup(sId.trim(), sPw, sNick.trim(), sCode.trim(), (mock ? sEmail : sId).trim());
     if (!r.ok) { setSErr(r.error ?? '가입 실패'); return; }
     setSignupOpen(false);
-    toast(mock ? '가입되었습니다 — 만든 계정으로 로그인해 보세요' : '가입되었습니다 — 이메일 인증 후 로그인해 주세요');
+    toast(mock ? '가입되었습니다 — 만든 계정으로 로그인해 보세요' : '가입되었습니다');
   };
 
   // 아이디 찾기 (v1.9) — 가입 이메일로
@@ -78,7 +78,7 @@ export default function LoginPage() {
           <EditableDesc k="login-desc" def="로그인 후 멤버 전용 콘텐츠를 열람할 수 있습니다" />
         </div>
         <div style={{ display: 'grid', gap: 9 }}>
-          <KInput placeholder={mock ? '아이디' : '이메일'} value={id} onChange={e => setId(e.target.value)} />
+          <KInput placeholder="아이디" value={id} onChange={e => setId(e.target.value)} />
           <KInput placeholder="비밀번호" type="password" value={pw} onChange={e => setPw(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') doLogin(); }} />
           {err && <p style={{ fontSize: 11.5, color: 'var(--accent)' }}>{err}</p>}
@@ -102,10 +102,10 @@ export default function LoginPage() {
           <button className="btn btn-dark" onClick={doSignup}>가입</button>
         </>}>
         <div style={{ display: 'grid', gap: 9 }}>
-          <KInput placeholder={mock ? '아이디' : '이메일 (아이디)'} value={sId} onChange={e => setSId(e.target.value)} />
+          <KInput placeholder="아이디" value={sId} onChange={e => setSId(e.target.value)} />
           <KInput placeholder="비밀번호" type="password" value={sPw} onChange={e => setSPw(e.target.value)} />
           <KInput placeholder="닉네임" value={sNick} onChange={e => setSNick(e.target.value)} />
-          {/* 서버 모드는 이메일이 곧 아이디라 다시 받지 않는다 (로컬 계정에서만 별도 입력) */}
+          {/* 서버 모드는 별도 이메일 없이 아이디만 사용한다 (로컬 계정에서만 복구 이메일 입력) */}
           {mock && (
             <KInput placeholder="이메일 — 아이디·비밀번호 찾기에 사용" value={sEmail} onChange={e => setSEmail(e.target.value)} />
           )}
@@ -119,7 +119,7 @@ export default function LoginPage() {
         title={mock ? '아이디·비밀번호 찾기' : '비밀번호 재설정'}
         desc={mock
           ? '가입 시 등록한 이메일로 아이디를 찾거나 임시 비밀번호를 발급합니다'
-          : '가입한 이메일로 재설정 링크를 보냅니다'}
+          : '기존 이메일 계정만 재설정 메일을 받을 수 있습니다. 아이디로 가입한 계정은 사용할 수 없습니다.'}
         dirty={!!fEmail}
         actions={<>
           <button className="btn btn-ghost" onClick={() => { setFindOpen(false); setFInfo(''); setFErr(''); }}>CANCEL</button>

@@ -10,6 +10,7 @@ export type Role = 'admin' | 'member' | 'guest';
 
 export interface User {
   id: string;
+  loginId?: string;
   nickname: string;
   role: Role;
   avatarUrl?: string;    // 프로필 이미지 (파일 참조 또는 URL)

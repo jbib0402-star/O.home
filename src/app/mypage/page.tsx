@@ -154,8 +154,8 @@ export default function MyPage() {
             </div>
             <div style={{ flex: 1, minWidth: 220, display: 'grid', gap: 10 }}>
               <div>
-                <label className="k-label" style={{ marginBottom: 5 }}>로그인 이메일</label>
-                <KInput value={user.email ?? user.id} disabled style={{ opacity: 0.6 }} />
+                <label className="k-label" style={{ marginBottom: 5 }}>아이디</label>
+                <KInput value={user.loginId ?? user.email ?? user.id} disabled style={{ opacity: 0.6 }} />
               </div>
               <div>
                 <label className="k-label" style={{ marginBottom: 5 }}>닉네임</label>

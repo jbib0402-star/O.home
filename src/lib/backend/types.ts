@@ -20,6 +20,8 @@ export type BackendConfig =
 /** 로그인 사용자 */
 export interface BackendUser {
   id: string;
+  /** 화면에 보여 주는 로그인 아이디. Supabase 내부 UUID/가상 이메일과 분리한다. */
+  loginId?: string;
   nickname: string;
   role: 'admin' | 'member';
   email?: string;

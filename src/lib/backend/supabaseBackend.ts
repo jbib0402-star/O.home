@@ -88,7 +88,11 @@ export async function createSupabaseBackend(
 
     async signUp(id, password, nickname) {
       const { error } = await sb.auth.signUp({ email: id, password, options: { data: { nickname } } });
-      return error ? { ok: false, error: error.message } : { ok: true };
+      if (!error) return { ok: true };
+      if (/unable to validate email address|invalid.*email|email.*invalid/i.test(error.message)) {
+        return { ok: false, error: '이메일 형식이 올바르지 않습니다. 예: name@example.com' };
+      }
+      return { ok: false, error: error.message };
     },
 
     async signOut() { await sb.auth.signOut(); },

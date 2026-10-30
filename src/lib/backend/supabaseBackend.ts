@@ -16,13 +16,28 @@ export async function createSupabaseBackend(
   const { createBrowserClient } = await import('@supabase/ssr');
   const sb: SupabaseClient = createBrowserClient(cfg.url.replace(/\/$/, ''), cfg.anonKey);
 
+  // Supabase Auth의 비밀번호 로그인은 이메일/전화번호 식별자를 요구한다.
+  // O.home에서는 사용자가 이메일 없이 "아이디"만 쓰도록, 일반 아이디를 내부 전용 이메일로
+  // 결정적으로 변환한다. 실제 이메일처럼 보이지만 메일 발송에는 쓰지 않는 예약 도메인이다.
+  const authEmailFor = async (loginId: string): Promise<string> => {
+    const raw = loginId.trim();
+    if (raw.includes('@')) return raw; // 기존 이메일 계정(관리자 포함)은 그대로 호환
+    const normalized = raw.normalize('NFKC').toLocaleLowerCase();
+    const bytes = new TextEncoder().encode(normalized);
+    const digest = await crypto.subtle.digest('SHA-256', bytes);
+    const hex = Array.from(new Uint8Array(digest))
+      .map(b => b.toString(16).padStart(2, '0')).join('');
+    return `u-${hex}@users.ohome.example.com`;
+  };
+
   const toUser = async (u: { id: string; email?: string; user_metadata?: Record<string, unknown> } | null | undefined): Promise<BackendUser | null> => {
     if (!u) return null;
     const { data: prof } = await sb.from('profiles')
       .select('nickname, role, avatar_url, avatar_color').eq('id', u.id).maybeSingle();
     return {
       id: u.id,
-      nickname: prof?.nickname ?? (u.user_metadata?.nickname as string) ?? u.email ?? 'user',
+      loginId: (u.user_metadata?.login_id as string | undefined) ?? u.email,
+      nickname: prof?.nickname ?? (u.user_metadata?.nickname as string) ?? (u.user_metadata?.login_id as string) ?? u.email ?? 'user',
       role: (prof?.role as 'admin' | 'member') ?? 'member',
       email: u.email,
       avatarUrl: prof?.avatar_url ?? undefined,
@@ -82,15 +97,23 @@ export async function createSupabaseBackend(
     },
 
     async signIn(id, password) {
-      const { error } = await sb.auth.signInWithPassword({ email: id, password });
-      return error ? { ok: false, error: error.message } : { ok: true };
+      const email = await authEmailFor(id);
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+      return error ? { ok: false, error: '아이디 또는 비밀번호가 올바르지 않습니다.' } : { ok: true };
     },
 
     async signUp(id, password, nickname) {
-      const { error } = await sb.auth.signUp({ email: id, password, options: { data: { nickname } } });
+      const loginId = id.trim();
+      if (!loginId) return { ok: false, error: '아이디를 입력해 주세요.' };
+      const email = await authEmailFor(loginId);
+      const { error } = await sb.auth.signUp({
+        email,
+        password,
+        options: { data: { nickname, login_id: loginId } },
+      });
       if (!error) return { ok: true };
-      if (/unable to validate email address|invalid.*email|email.*invalid/i.test(error.message)) {
-        return { ok: false, error: '이메일 형식이 올바르지 않습니다. 예: name@example.com' };
+      if (/already registered|already exists/i.test(error.message)) {
+        return { ok: false, error: '이미 사용 중인 아이디입니다.' };
       }
       return { ok: false, error: error.message };
     },
@@ -98,6 +121,9 @@ export async function createSupabaseBackend(
     async signOut() { await sb.auth.signOut(); },
 
     async resetPassword(email) {
+      if (!email.includes('@')) {
+        return { ok: false, error: '아이디 계정은 이메일 비밀번호 재설정을 사용할 수 없습니다.' };
+      }
       const { error } = await sb.auth.resetPasswordForEmail(email);
       return error ? { ok: false, error: error.message } : { ok: true };
     },

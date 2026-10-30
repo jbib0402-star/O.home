@@ -47,7 +47,7 @@ export default function LoginPage() {
     const r = await signup(sId.trim(), sPw, sNick.trim(), sCode.trim(), (mock ? sEmail : sId).trim());
     if (!r.ok) { setSErr(r.error ?? '가입 실패'); return; }
     setSignupOpen(false);
-    toast(mock ? '가입되었습니다 — 만든 계정으로 로그인해 보세요' : '가입되었습니다 — 이메일 인증 후 로그인해 주세요');
+    toast(mock ? '가입되었습니다 — 만든 계정으로 로그인해 보세요' : '가입되었습니다');
   };
 
   // 아이디 찾기 (v1.9) — 가입 이메일로
@@ -102,7 +102,7 @@ export default function LoginPage() {
           <button className="btn btn-dark" onClick={doSignup}>가입</button>
         </>}>
         <div style={{ display: 'grid', gap: 9 }}>
-          <KInput placeholder={mock ? '아이디' : '이메일 (아이디)'} value={sId} onChange={e => setSId(e.target.value)} />
+          <KInput type={mock ? 'text' : 'email'} placeholder={mock ? '아이디' : '이메일 (로그인 아이디)'} value={sId} onChange={e => setSId(e.target.value)} />
           <KInput placeholder="비밀번호" type="password" value={sPw} onChange={e => setSPw(e.target.value)} />
           <KInput placeholder="닉네임" value={sNick} onChange={e => setSNick(e.target.value)} />
           {/* 서버 모드는 이메일이 곧 아이디라 다시 받지 않는다 (로컬 계정에서만 별도 입력) */}

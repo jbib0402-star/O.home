@@ -240,8 +240,18 @@ export async function readFileByRef(ref: string): Promise<Blob | null> {
   if (isFileUrl(ref)) {
     try {
       const res = await fetch(ref);
-      return res.ok ? await res.blob() : null;
-    } catch { return null; }
+      if (res.ok) return await res.blob();
+    } catch { /* Firebase Storage CORS면 아래 서버 프록시로 재시도 */ }
+
+    // Firebase Storage는 다른 Origin에서 원본 fetch를 막는 경우가 있다.
+    // DB 이전 때만 쓰는 제한된 프록시로 한 번 더 읽는다.
+    if (/^https:\/\/firebasestorage\.googleapis\.com\//.test(ref)) {
+      try {
+        const res = await fetch(`/api/migrate-file?url=${encodeURIComponent(ref)}`);
+        return res.ok ? await res.blob() : null;
+      } catch { return null; }
+    }
+    return null;
   }
   return getBlob(ref);
 }

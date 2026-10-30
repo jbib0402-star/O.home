@@ -94,7 +94,7 @@ export const PLAYLOG_COLS: { key: string; label: string }[] = [
 ];
 
 export const DEFAULT_MENU_SETTINGS: MenuSettings = {
-  builtinVersion: 2,
+  builtinVersion: 3,
   removedBoards: [],
   groupOrder: DEFAULT_MENU.map(m => m.label),
   hidden: [],
@@ -112,7 +112,7 @@ const KEY = 'ohome.menuset.v1';
 /** 새 기본 기능 — 이미 저장된 메뉴에는 각 버전마다 한 번만 넣는다. */
 function migrateBuiltins(p: Partial<MenuSettings>): Partial<MenuSettings> {
   const version = p.builtinVersion ?? 0;
-  if (version >= 2) return p;
+  if (version >= 3) return p;
   const tree = p.tree ?? migrateTree(p);
   if (version < 1 && !tree.some(g => g.href === '/music' || g.items.some(it => it.href === '/music'))) {
     const boardGroup = tree.find(g => g.items.some(it => it.href === '/loadb'))
@@ -128,10 +128,18 @@ function migrateBuiltins(p: Partial<MenuSettings>): Partial<MenuSettings> {
     if (boardGroup) {
       const at = boardGroup.items.findIndex(it => it.href === '/music');
       boardGroup.items.splice(at >= 0 ? at + 1 : boardGroup.items.length, 0,
-        { href: '/quick-music', vis: 'admin' });
+        { href: '/quick-music', vis: 'member' });
     }
   }
-  return { ...p, tree, builtinVersion: 2 };
+  if (version < 3) {
+    for (const g of tree) {
+      if (g.href === '/quick-music' && g.vis === 'admin') g.vis = 'member';
+      for (const it of g.items) {
+        if (it.href === '/quick-music' && it.vis === 'admin') it.vis = 'member';
+      }
+    }
+  }
+  return { ...p, tree, builtinVersion: 3 };
 }
 
 /** 주소를 바꾼 메뉴 (v2.0 사용자 요청) — 옛 이름이 그대로였던 것들 */

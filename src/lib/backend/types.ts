@@ -51,7 +51,7 @@ export interface Backend {
   signUp(id: string, password: string, nickname: string): Promise<{ ok: boolean; error?: string }>;
   signOut(): Promise<void>;
   resetPassword(email: string): Promise<{ ok: boolean; error?: string }>;
-  updateProfile(patch: { nickname?: string; avatarUrl?: string | null; avatarColor?: string | null }): Promise<{ ok: boolean; error?: string }>;
+  updateProfile(patch: { nickname?: string; avatarUrl?: string | null; avatarColor?: string | null; currentPassword?: string; newPassword?: string }): Promise<{ ok: boolean; error?: string }>;
   /** 첫 계정을 이 홈의 관리자로 등록 (관리자가 아직 없을 때만) */
   claimOwner(): Promise<{ ok: boolean; error?: string }>;
   /** 가입 회원 목록 — 역극 참여자 선택·회원 관리 화면용 */

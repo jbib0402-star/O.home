@@ -78,7 +78,7 @@ export default function LoginPage() {
           <EditableDesc k="login-desc" def="로그인 후 멤버 전용 콘텐츠를 열람할 수 있습니다" />
         </div>
         <div style={{ display: 'grid', gap: 9 }}>
-          <KInput placeholder="아이디" value={id} onChange={e => setId(e.target.value)} />
+          <KInput placeholder={mock ? '아이디' : '이메일'} value={id} onChange={e => setId(e.target.value)} />
           <KInput placeholder="비밀번호" type="password" value={pw} onChange={e => setPw(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') doLogin(); }} />
           {err && <p style={{ fontSize: 11.5, color: 'var(--accent)' }}>{err}</p>}

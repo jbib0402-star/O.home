@@ -1589,10 +1589,17 @@ function DataPane() {
   /* ---------- 데이터베이스 이전 (v2.0) — 다른 프로젝트/다른 서비스로 통째 옮기기 ---------- */
   const [migOpen, setMigOpen] = useState(false);
   const [migKind, setMigKind] = useState<BackendKind>('supabase');
-  const [migSb, setMigSb] = useState({ url: '', anonKey: '' });
+  // O.home 전용 Supabase 이전 대상 — URL/키는 브라우저 공개용 값이라 저장소에 있어도 안전하다.
+  const [migSb, setMigSb] = useState({
+    url: 'https://ubddvwnrexoewhoaqvqo.supabase.co',
+    anonKey: 'sb_publishable_0sK7sGLmCyf3K3Dc37IcKQ_jBq3t_uU',
+  });
   const [migFb, setMigFb] = useState({ apiKey: '', authDomain: '', projectId: '', storageBucket: '', appId: '' });
   const [migState, setMigState] = useState<'idle' | 'checking' | 'ready' | 'running' | 'done'>('idle');
   const [migMsg, setMigMsg] = useState('');
+  const [migAuth, setMigAuth] = useState({ email: '', password: '', nickname: '' });
+  const [migAuthReady, setMigAuthReady] = useState(false);
+  const [migAuthBusy, setMigAuthBusy] = useState(false);
 
   const migCfg = (): BackendConfig => (migKind === 'firebase'
     ? {
@@ -1612,11 +1619,52 @@ function DataPane() {
     try {
       const be = await createBackend(migCfg());
       const r = await be.check();
-      setMigMsg(r.message);
+      const me = migKind === 'supabase' ? await be.currentUser() : null;
+      setMigAuthReady(!!me);
+      setMigMsg(me ? `${r.message} · 대상 DB 로그인됨 (${me.nickname})` : r.message);
       setMigState(r.ok ? 'ready' : 'idle');
     } catch (e) {
       setMigMsg(`연결에 실패했습니다 — ${(e as { message?: string })?.message ?? ''}`);
       setMigState('idle');
+      setMigAuthReady(false);
+    }
+  };
+
+  const migAuthSubmit = async (mode: 'signup' | 'signin') => {
+    if (migKind !== 'supabase') return;
+    const email = migAuth.email.trim();
+    const password = migAuth.password;
+    const nickname = migAuth.nickname.trim() || 'admin';
+    if (!email || !password) {
+      setMigMsg('새 Supabase에서 사용할 이메일과 비밀번호를 입력해 주세요.');
+      return;
+    }
+    setMigAuthBusy(true);
+    try {
+      const target = await createBackend(migCfg());
+      const r = mode === 'signup'
+        ? await target.signUp(email, password, nickname)
+        : await target.signIn(email, password);
+      if (!r.ok) {
+        setMigMsg(`${mode === 'signup' ? '가입' : '로그인'}에 실패했습니다 — ${r.error ?? ''}`);
+        setMigAuthReady(false);
+        return;
+      }
+      const me = await target.currentUser();
+      if (!me) {
+        setMigMsg('가입은 됐지만 아직 로그인되지 않았습니다. 확인 메일이 왔다면 승인한 뒤 [기존 계정 로그인]을 눌러 주세요.');
+        setMigAuthReady(false);
+        return;
+      }
+      await target.claimOwner();
+      setMigAuthReady(true);
+      setMigState('ready');
+      setMigMsg(`대상 Supabase 로그인 완료 — ${me.nickname}. 이제 [이전 시작]을 누르면 현재 Firebase 데이터를 복사합니다.`);
+    } catch (e) {
+      setMigMsg(`Supabase 인증에 실패했습니다 — ${(e as { message?: string })?.message ?? ''}`);
+      setMigAuthReady(false);
+    } finally {
+      setMigAuthBusy(false);
     }
   };
 
@@ -1624,10 +1672,24 @@ function DataPane() {
     setMigState('running');
     try {
       const target = await createBackend(migCfg());
+      if (migKind === 'supabase') {
+        const me = await target.currentUser();
+        if (!me) {
+          setMigMsg('대상 Supabase 로그인이 필요합니다 — 아래에서 새 계정을 만들거나 로그인해 주세요.');
+          setMigState('ready');
+          setMigAuthReady(false);
+          return;
+        }
+        if (me.role !== 'admin') {
+          setMigMsg('대상 Supabase의 관리자 계정으로 로그인해야 전체 데이터를 옮길 수 있습니다.');
+          setMigState('ready');
+          return;
+        }
+      }
       const r = await migrateTo(target, (m, done, total) => {
         setMigMsg(total ? `${m} (${done}/${total})` : m);
       });
-      setMigMsg(`이전 완료 — 항목 ${r.items}건 · 이미지 ${r.files}개. 아래 설정 파일을 저장소에 올리면 방문자도 새 DB를 봅니다.`);
+      setMigMsg(`이전 완료 — 항목 ${r.items}건 · 이미지 ${r.files}개. 현재 Firebase 데이터는 그대로 남아 있습니다.`);
       setMigState('done');
     } catch (e) {
       setMigMsg(`이전에 실패했습니다 — ${(e as { message?: string })?.message ?? ''}`);
@@ -1774,8 +1836,10 @@ function DataPane() {
         desc="옮길 곳의 연결 정보를 넣고 확인한 뒤 시작합니다 — 지금 데이터는 그대로 두고 복사합니다"
         actions={<>
           <button className="btn btn-ghost" onClick={() => setMigOpen(false)}>CLOSE</button>
-          {migState === 'ready' && <button className="btn btn-accent" onClick={migRun}>이전 시작</button>}
-          {migState === 'done' && <button className="btn btn-accent" onClick={migSwitch}>새 DB로 전환</button>}
+          {migState === 'ready' && (migKind !== 'supabase' || migAuthReady) && (
+            <button className="btn btn-accent" onClick={migRun}>이전 시작</button>
+          )}
+          {migState === 'done' && <button className="btn btn-accent" onClick={migDownloadConfig}>설정 파일 받기</button>}
         </>}>
         <div className="mini-seg" style={{ marginBottom: 12 }}>
           <button className={migKind === 'supabase' ? 'on' : ''} onClick={() => setMigKind('supabase')}>Supabase</button>
@@ -1785,10 +1849,35 @@ function DataPane() {
         {migKind === 'supabase' ? (
           <div style={{ display: 'grid', gap: 8 }}>
             <label className="k-label">Project URL</label>
-            <KInput value={migSb.url} onChange={e => setMigSb(s => ({ ...s, url: e.target.value }))} placeholder="https://xxxx.supabase.co" />
-            <label className="k-label">anon public key</label>
-            <KInput value={migSb.anonKey} onChange={e => setMigSb(s => ({ ...s, anonKey: e.target.value }))} />
-            <p className="hint" style={{ margin: 0 }}>새 프로젝트라면 먼저 스키마 SQL을 실행해 두세요 — 설치 화면과 같은 내용입니다.</p>
+            <KInput value={migSb.url} onChange={e => { setMigSb(s => ({ ...s, url: e.target.value })); setMigAuthReady(false); }}
+              placeholder="https://xxxx.supabase.co" />
+            <label className="k-label">publishable / anon key</label>
+            <KInput value={migSb.anonKey} onChange={e => { setMigSb(s => ({ ...s, anonKey: e.target.value })); setMigAuthReady(false); }} />
+            <p className="hint" style={{ margin: 0 }}>O.home 새 Supabase 프로젝트가 미리 입력되어 있습니다.</p>
+
+            <div style={{ height: 1, background: 'var(--line)', margin: '6px 0 2px' }} />
+            <label className="k-label">새 Supabase 관리자 계정</label>
+            <KInput type="email" value={migAuth.email}
+              onChange={e => setMigAuth(a => ({ ...a, email: e.target.value }))}
+              placeholder="로그인에 사용할 이메일" autoComplete="email" />
+            <KInput type="password" value={migAuth.password}
+              onChange={e => setMigAuth(a => ({ ...a, password: e.target.value }))}
+              placeholder="비밀번호" autoComplete="new-password" />
+            <KInput value={migAuth.nickname}
+              onChange={e => setMigAuth(a => ({ ...a, nickname: e.target.value }))}
+              placeholder="닉네임 (새 계정 만들 때만)" />
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <button className="btn btn-ghost" type="button" disabled={migAuthBusy}
+                onClick={() => void migAuthSubmit('signup')}>
+                {migAuthBusy ? '처리 중…' : '새 계정 만들기'}
+              </button>
+              <button className="btn btn-ghost" type="button" disabled={migAuthBusy}
+                onClick={() => void migAuthSubmit('signin')}>기존 계정 로그인</button>
+              {migAuthReady && <span className="setup-ok" style={{ margin: 0 }}>✓ 대상 DB 로그인 완료</span>}
+            </div>
+            <p className="hint" style={{ margin: 0 }}>
+              Firebase 로그인은 그대로 유지됩니다. 여기 로그인은 새 Supabase에 복사본을 쓰기 위한 용도입니다.
+            </p>
           </div>
         ) : (
           <div style={{ display: 'grid', gap: 8 }}>
@@ -1816,10 +1905,7 @@ function DataPane() {
             disabled={migState === 'checking' || migState === 'running'} onClick={migCheck}>
             {migState === 'checking' ? '확인 중…' : '연결 확인'}
           </button>
-          {migState === 'done' && (
-            <button className="btn btn-ghost" style={{ height: 33, padding: '0 14px', fontSize: 11 }}
-              onClick={migDownloadConfig}>ohome.config.json 내려받기</button>
-          )}
+
         </div>
         {migMsg && (
           <p className={migState === 'done' || migState === 'ready' ? 'setup-ok' : 'setup-err'} style={{ marginTop: 10 }}>

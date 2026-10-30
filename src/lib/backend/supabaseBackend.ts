@@ -99,14 +99,39 @@ export async function createSupabaseBackend(
     },
 
     async updateProfile(patch) {
-      const { data } = await sb.auth.getUser();
-      if (!data.user) return { ok: false, error: '로그인이 필요합니다.' };
-      const row: Record<string, unknown> = { id: data.user.id };
+      const { data, error: userError } = await sb.auth.getUser();
+      if (userError || !data.user) return { ok: false, error: '로그인이 필요합니다.' };
+
+      // 비밀번호 변경은 profiles 테이블이 아니라 Supabase Auth에서 처리한다.
+      // 현재 비밀번호를 먼저 다시 확인한 뒤 새 비밀번호로 갱신한다.
+      if (patch.newPassword !== undefined) {
+        if (!data.user.email) return { ok: false, error: '로그인 이메일을 확인할 수 없습니다.' };
+        if (!patch.currentPassword) return { ok: false, error: '현재 비밀번호를 입력해 주세요.' };
+        const { error: verifyError } = await sb.auth.signInWithPassword({
+          email: data.user.email,
+          password: patch.currentPassword,
+        });
+        if (verifyError) return { ok: false, error: '현재 비밀번호가 올바르지 않습니다.' };
+        const { error: passwordError } = await sb.auth.updateUser({ password: patch.newPassword });
+        if (passwordError) return { ok: false, error: passwordError.message };
+      }
+
+      // 가입 트리거가 이미 만든 내 profile 행만 UPDATE한다.
+      // upsert는 INSERT RLS까지 검사해 기존 행 수정도 막히므로 사용하지 않는다.
+      const row: Record<string, unknown> = {};
       if (patch.nickname !== undefined) row.nickname = patch.nickname;
       if (patch.avatarUrl !== undefined) row.avatar_url = patch.avatarUrl;
       if (patch.avatarColor !== undefined) row.avatar_color = patch.avatarColor;
-      const { error } = await sb.from('profiles').upsert(row, { onConflict: 'id' });
-      return error ? { ok: false, error: error.message } : { ok: true };
+      if (Object.keys(row).length === 0) return { ok: true };
+
+      const { data: updated, error } = await sb.from('profiles')
+        .update(row)
+        .eq('id', data.user.id)
+        .select('id')
+        .maybeSingle();
+      if (error) return { ok: false, error: error.message };
+      if (!updated) return { ok: false, error: '프로필 정보를 찾을 수 없습니다. 다시 로그인해 주세요.' };
+      return { ok: true };
     },
 
     // Supabase는 스키마의 트리거가 첫 가입자를 관리자로 만들어 준다 — 추가 작업 없음

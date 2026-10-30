@@ -40,7 +40,11 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
   const { user, isAdmin } = useAuth();
   const toast = useToast();
   const [menuSet] = useMenuSettings();
-  const [all, setAll] = useLocalList<RoadItem>(temporary ? QUICK_KEY : 'ohome.road.v1', ROAD_SEED);
+  // 24H 플레이리스트는 서버에 올리지 않고, 로그인한 회원별 브라우저 저장소만 사용한다.
+  // 같은 컴퓨터를 함께 써도 계정 id가 다르면 서로의 목록/만료시간이 섞이지 않는다.
+  const quickKey = temporary && user ? `${QUICK_KEY}.${user.id}` : QUICK_KEY;
+  const quickMetaKey = temporary && user ? `${QUICK_META_KEY}.${user.id}` : QUICK_META_KEY;
+  const [all, setAll, quickLoaded] = useLocalList<RoadItem>(temporary ? quickKey : 'ohome.road.v1', ROAD_SEED);
   const source = temporary ? all : filterSection(all, MUSIC_SEC);
   const items = source.filter(it => it.music && !!it.youtubeId)
     .sort((a, b) => (a.musicOrder ?? Number.MAX_SAFE_INTEGER) - (b.musicOrder ?? Number.MAX_SAFE_INTEGER)
@@ -79,33 +83,61 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
   repeatRef.current = repeat;
   shuffleRef.current = shuffle;
 
+  // 예전 관리자 전용 버전의 공용 로컬 키가 남아 있으면 관리자 계정에 한 번만 승계한다.
+  // 회원 계정은 항상 빈 개인 목록에서 시작하므로 다른 사람의 기존 목록을 가져가지 않는다.
   useEffect(() => {
-    if (!temporary) return;
+    if (!temporary || !user || !quickLoaded || !isAdmin) return;
     try {
-      const raw = localStorage.getItem(QUICK_META_KEY);
+      if (localStorage.getItem(quickKey) == null) {
+        const legacy = localStorage.getItem(QUICK_KEY);
+        if (legacy) {
+          const parsed = JSON.parse(legacy) as RoadItem[];
+          if (Array.isArray(parsed)) {
+            setAll(parsed);
+            localStorage.removeItem(QUICK_KEY);
+          }
+        }
+      }
+    } catch { /* 이전 데이터가 깨졌으면 새 개인 목록 사용 */ }
+  }, [temporary, user, quickLoaded, isAdmin, quickKey, setAll]);
+
+  useEffect(() => {
+    if (!temporary || !user) return;
+    try {
+      let raw = localStorage.getItem(quickMetaKey);
+      if (!raw && isAdmin) {
+        raw = localStorage.getItem(QUICK_META_KEY);
+        if (raw) {
+          localStorage.setItem(quickMetaKey, raw);
+          localStorage.removeItem(QUICK_META_KEY);
+        }
+      }
       if (raw) {
         const parsed = JSON.parse(raw) as QuickMeta;
         setQuickMeta(parsed);
         setQuickTitle(parsed.title || 'ONE-DAY PLAYLIST');
+      } else {
+        setQuickMeta({ title: 'ONE-DAY PLAYLIST' });
+        setQuickTitle('ONE-DAY PLAYLIST');
       }
     } catch { /* 기본값 */ }
     const timer = window.setInterval(() => setNow(Date.now()), 1000);
     return () => window.clearInterval(timer);
-  }, [temporary]);
+  }, [temporary, user, isAdmin, quickMetaKey]);
 
   useEffect(() => {
     if (!temporary || !quickMeta.expiresAt || new Date(quickMeta.expiresAt).getTime() > now) return;
     setAll([]);
     const clean = { title: quickMeta.title || 'ONE-DAY PLAYLIST', bgId: quickMeta.bgId };
     setQuickMeta(clean);
-    try { localStorage.setItem(QUICK_META_KEY, JSON.stringify(clean)); } catch { /* 무시 */ }
+    try { localStorage.setItem(quickMetaKey, JSON.stringify(clean)); } catch { /* 무시 */ }
     playerRef.current?.stopVideo();
     setCurrentId(null);
-  }, [temporary, quickMeta, now, setAll]);
+  }, [temporary, quickMeta, now, setAll, quickMetaKey]);
 
   const saveQuickMeta = (next: QuickMeta) => {
     setQuickMeta(next);
-    try { localStorage.setItem(QUICK_META_KEY, JSON.stringify(next)); } catch { /* 무시 */ }
+    try { localStorage.setItem(quickMetaKey, JSON.stringify(next)); } catch { /* 무시 */ }
   };
   const timeLeft = quickMeta.expiresAt ? Math.max(0, new Date(quickMeta.expiresAt).getTime() - now) : 0;
   const timeLeftText = quickMeta.expiresAt
@@ -113,7 +145,7 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
     : '첫 곡 추가 후 24:00:00';
 
   const allow = (p: MenuPerm) => (p === 'admin' ? isAdmin : p === 'member' ? !!user : true);
-  const canAdd = !!user && allow(menuSet.roadUpload);
+  const canAdd = temporary ? !!user : !!user && allow(menuSet.roadUpload);
   const current = items.find(it => it.id === currentId) ?? items[0] ?? null;
   const visible = useMemo(() => {
     const q = query.trim().toLocaleLowerCase();
@@ -278,8 +310,9 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
     closeModal();
   };
 
+  const canReorder = temporary ? !!user : isAdmin;
   const reorder = (targetId: string) => {
-    if (!isAdmin || !dragId || dragId === targetId) { setDragId(null); return; }
+    if (!canReorder || !dragId || dragId === targetId) { setDragId(null); return; }
     const next = [...items];
     const from = next.findIndex(it => it.id === dragId);
     const to = next.findIndex(it => it.id === targetId);
@@ -297,7 +330,7 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
         <PageTitle>{temporary ? quickMeta.title : 'MUSIC'}</PageTitle>
         {temporary ? <p className="quick-expiry">24H TEMPORARY · 남은 시간 {timeLeftText}</p>
           : <EditableDesc k="music-desc" def="좋아하는 노래를 모았습니다" />}
-        {temporary && isAdmin && <div className="head-actions">
+        {temporary && user && <div className="head-actions">
           <button className="btn btn-ghost" onClick={() => { setQuickTitle(quickMeta.title); setQuickSettings(true); }}>PLAYLIST SETTING</button>
           <button className="btn btn-ghost" disabled={!items.length} onClick={() => setQuickClear(true)}>EMPTY</button>
         </div>}
@@ -352,13 +385,13 @@ export function MusicPlayerPage({ temporary = false }: { temporary?: boolean }) 
         </div>
         {visible.map(item => {
           const active = current?.id === item.id;
-          const canEdit = !!item.authorId && item.authorId === user?.id;
-          const canDelete = isAdmin || canEdit;
+          const canEdit = temporary ? !!user : !!item.authorId && item.authorId === user?.id;
+          const canDelete = temporary ? !!user : isAdmin || canEdit;
           return (
             <article className={`music-item ${active ? 'active' : ''}`} key={item.id}
-              draggable={isAdmin} onDragStart={() => setDragId(item.id)} onDragEnd={() => setDragId(null)}
-              onDragOver={e => { if (isAdmin) e.preventDefault(); }} onDrop={() => reorder(item.id)}>
-              {isAdmin && <span className="music-grip" aria-label="순서 변경">⠿</span>}
+              draggable={canReorder} onDragStart={() => setDragId(item.id)} onDragEnd={() => setDragId(null)}
+              onDragOver={e => { if (canReorder) e.preventDefault(); }} onDrop={() => reorder(item.id)}>
+              {canReorder && <span className="music-grip" aria-label="순서 변경">⠿</span>}
               <button className="music-summary" type="button" onClick={() => selectTrack(item)}>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={`https://i.ytimg.com/vi/${item.youtubeId}/mqdefault.jpg`} alt="" />
